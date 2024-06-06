@@ -1506,6 +1506,7 @@ class RESTfulAPI:
             logger.error(e, exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
+
     async def get_model_events(self, model_uid: str) -> JSONResponse:
         try:
             event_collector_ref = await self._get_event_collector_ref()
@@ -1554,6 +1555,16 @@ class RESTfulAPI:
             logger.error(e, exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
+    async def list_cached_dataset(self) -> JSONResponse:
+        try:
+            data = await (await self._get_supervisor_ref()).list_cached_models()
+            return JSONResponse(content=data)
+        except ValueError as re:
+            logger.error(re, exc_info=True)
+            raise HTTPException(status_code=400, detail=str(re))
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
 
 def run(
     supervisor_address: str,
