@@ -1,4 +1,7 @@
 {
+  "测试":{
+    "description": "代码包邮10块"
+  },
   "alpaca_en": {
     "file_name": "alpaca_data_en_52k.json"
   },

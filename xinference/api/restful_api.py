@@ -56,6 +56,7 @@ from ..constants import XINFERENCE_DEFAULT_ENDPOINT_PORT, XINFERENCE_DISABLE_MET
 from ..core.event import Event, EventCollectorActor, EventType
 from ..core.supervisor import SupervisorActor
 from ..core.utils import json_dumps
+from ..core.dataset import DatasetReader
 from ..types import (
     SPECIAL_TOOL_PROMPT,
     ChatCompletion,
@@ -165,6 +166,7 @@ class RESTfulAPI:
         self._auth_service = AuthService(auth_config_file)
         self._router = APIRouter()
         self._app = FastAPI()
+        self._dataset = DatasetReader()
 
     def is_authenticated(self):
         return False if self._auth_service.config is None else True
@@ -496,6 +498,18 @@ class RESTfulAPI:
         self._router.add_api_route(
             "/v1/cached/list_cached_models",
             self.list_cached_models,
+            methods=["GET"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
+
+        # for dataset
+        self._router.add_api_route(
+            "/v1/dataset/list_dataset",
+            self.list_dataset,
             methods=["GET"],
             dependencies=(
                 [Security(self._auth_service, scopes=["models:list"])]
@@ -1555,16 +1569,20 @@ class RESTfulAPI:
             logger.error(e, exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def list_cached_dataset(self) -> JSONResponse:
+    async def list_dataset(self) -> JSONResponse:
         try:
-            data = await (await self._get_supervisor_ref()).list_cached_models()
+            data = await self._dataset.list_dataset()
             return JSONResponse(content=data)
-        except ValueError as re:
-            logger.error(re, exc_info=True)
-            raise HTTPException(status_code=400, detail=str(re))
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="Data file not found.")
+        except ValueError as ve:
+            logger.error(ve)
+            raise HTTPException(status_code=400, detail="Invalid data format.")
         except Exception as e:
-            logger.error(e, exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
+
 
 def run(
     supervisor_address: str,
