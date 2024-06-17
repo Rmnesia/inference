@@ -517,6 +517,17 @@ class RESTfulAPI:
                 else None
             ),
         )
+        self._router.add_api_route(
+            "/v1/dataset/create_dataset",
+            self.create_dataset,
+            methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
+
 
         if XINFERENCE_DISABLE_METRICS:
             logger.info(
@@ -1579,6 +1590,26 @@ class RESTfulAPI:
         except ValueError as ve:
             logger.error(ve)
             raise HTTPException(status_code=400, detail="Invalid data format.")
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
+    async def create_dataset(self, request: Request) -> JSONResponse:
+        data = await request.json()
+        dataset_name = data['dataset_name']
+        dataset_type = data['dataset_type']
+        dataset_desc = data['dataset_desc']
+        dataset_tags = data['dataset_tags']
+        try:
+            await self._dataset.create_dataset(dataset_name, dataset_type, dataset_desc, dataset_tags)
+            return JSONResponse(content=None)
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="Data file not found.")
+        except ValueError as ve:
+            logger.error(ve)
+            raise HTTPException(status_code=400, detail="Invalid data format.")
+        except KeyError as ke:
+            raise HTTPException(status_code=400, detail="数据集名称已存在")
         except Exception as e:
             logger.error(e)
             raise HTTPException(status_code=500, detail="Internal Server Error.")
