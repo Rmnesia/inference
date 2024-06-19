@@ -51,7 +51,7 @@ class DatasetReader:
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to decode JSON: {e}")
 
-    async def create_dataset(self, dataset_name: str, dataset_type: str, dataset_desc: str, dataset_tags) -> dict:
+    async def create_dataset(self, dataset_name: str, dataset_type: str, dataset_desc: str, dataset_tags):
         """异步读取并导入dataset_info.json"""
         import datetime
         try:
@@ -132,6 +132,29 @@ class DatasetReader:
                     data.append(item)
             with open(file_name, 'w+', encoding='utf-8') as file:
                 json.dump(data, file, ensure_ascii=False, indent=4)
+
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found: {self.data_path}")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to decode JSON: {e}")
+
+    async def read_data(self, dataset_name: str, page_num: int, page_size: int) -> dict:
+        """异步读取dataset_info.json并读取数据"""
+        try:
+            with open(self.data_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+                # 检查新键是否已存在，如果存在则抛出异常
+                if dataset_name in data:
+                    file_name = self.data_directory + data[dataset_name]['file_name']
+                else:
+                    raise KeyError(f"键 '{dataset_name}' 不存在于字典中。")
+
+            with open(file_name, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+                return {
+                    "total":len(data),
+                    "data_list":data[(page_num-1)*page_size:page_num*page_size]
+                }
 
         except FileNotFoundError:
             raise FileNotFoundError(f"File not found: {self.data_path}")

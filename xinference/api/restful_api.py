@@ -548,6 +548,16 @@ class RESTfulAPI:
             ),
         )
         self._router.add_api_route(
+            "/v1/dataset/read_data",
+            self.read_data,
+            methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
+        self._router.add_api_route(
             "/v1/dataset/upload_data",
             self.upload_data,
             methods=["POST"],
@@ -1681,6 +1691,26 @@ class RESTfulAPI:
             logger.error(e)
             raise HTTPException(status_code=500, detail="Internal Server Error.")
 
+    async def read_data(self, request: Request) -> JSONResponse:
+        data = await request.json()
+        dataset_name = data['dataset_name']
+        page_num = data.get('page_num', 1)
+        page_size = data.get('page_size', 1)
+
+        try:
+            data = await self._dataset.read_data(dataset_name, page_num, page_size)
+            return JSONResponse(content=data)
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="Data file not found.")
+        except ValueError as ve:
+            logger.error(ve)
+            raise HTTPException(status_code=400, detail="Invalid data format.")
+        except KeyError as ke:
+            raise HTTPException(status_code=400, detail="数据集名称不存在")
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
     async def upload_data(self, dataset_name:str = Form(...), upload_file: UploadFile = File(...)) -> JSONResponse:
         import pandas as pd
         try:
