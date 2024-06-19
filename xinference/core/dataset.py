@@ -138,7 +138,7 @@ class DatasetReader:
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to decode JSON: {e}")
 
-    async def read_data(self, dataset_name: str, page_num: int, page_size: int) -> dict:
+    async def read_data(self, dataset_name: str, page_num: int, page_size: int, keyword: str = None) -> dict:
         """异步读取dataset_info.json并读取数据"""
         try:
             with open(self.data_path, 'r', encoding='utf-8') as file:
@@ -150,10 +150,16 @@ class DatasetReader:
                     raise KeyError(f"键 '{dataset_name}' 不存在于字典中。")
 
             with open(file_name, 'r', encoding='utf-8') as file:
-                data = json.load(file)
+                raw_data = json.load(file)
+                if keyword:
+                    # 对于每个数据项，检查所有字段值是否包含过滤关键词（忽略大小写）
+                    filtered_data = [item for item in raw_data if
+                                     any(keyword.lower() in str(value).lower() for value in item.values())]
+                else:
+                    filtered_data = raw_data
                 return {
-                    "total":len(data),
-                    "data_list":data[(page_num-1)*page_size:page_num*page_size]
+                    "total":len(filtered_data),
+                    "data_list":filtered_data[(page_num-1)*page_size:page_num*page_size]
                 }
 
         except FileNotFoundError:

@@ -1695,10 +1695,12 @@ class RESTfulAPI:
         data = await request.json()
         dataset_name = data['dataset_name']
         page_num = data.get('page_num', 1)
-        page_size = data.get('page_size', 1)
-
+        page_size = data.get('page_size', 5)
+        keyword = data.get('keyword')
+        if keyword == "" or keyword == " ":
+            keyword = None
         try:
-            data = await self._dataset.read_data(dataset_name, page_num, page_size)
+            data = await self._dataset.read_data(dataset_name, page_num, page_size, keyword)
             return JSONResponse(content=data)
         except FileNotFoundError as fe:
             logger.error(fe)
