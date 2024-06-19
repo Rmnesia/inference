@@ -65,7 +65,7 @@ class DatasetReader:
                 # 拼接文件名
                 file_name = f"{dataset_name}{timestamp}.json"
                 # 确保当前目录存在，然后写入JSON数据到文件
-                with open(file_name, 'w') as json_file:
+                with open(self.data_directory+file_name, 'w') as json_file:
                     json.dump([], json_file, ensure_ascii=False, indent=4)
 
                 # 将新键值对添加到已有数据中
@@ -103,7 +103,7 @@ class DatasetReader:
                     del data[dataset_name]
                 else:
                     raise KeyError(f"键 '{dataset_name}' 不存在于字典中。")
-                os.remove(file_name)
+                os.remove(self.data_directory+file_name)
 
             with open(self.data_path, 'w+', encoding='utf-8') as file:
                 # 将更新后的内容写回原JSON文件
@@ -116,9 +116,8 @@ class DatasetReader:
 
     async def add_data(self, dataset_name: str, data_list):
         """异步读取dataset_info.json并添加一条数据"""
-        import os
         try:
-            with open(data_path, 'r', encoding='utf-8') as file:
+            with open(self.data_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
                 # 检查新键是否已存在，如果存在则抛出异常
                 if dataset_name in data:
