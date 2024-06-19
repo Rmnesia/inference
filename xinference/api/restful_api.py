@@ -547,6 +547,16 @@ class RESTfulAPI:
                 else None
             ),
         )
+        self._router.add_api_route(
+            "/v1/dataset/upload_data",
+            self.upload_data,
+            methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
 
 
         if XINFERENCE_DISABLE_METRICS:
@@ -1671,7 +1681,32 @@ class RESTfulAPI:
             logger.error(e)
             raise HTTPException(status_code=500, detail="Internal Server Error.")
 
+    async def upload_data(self, dataset_name:str = Form(...), upload_file: UploadFile = File(...)) -> JSONResponse:
+        import pandas as pd
+        try:
+            # 读取Excel文件
+            df = pd.read_excel(await upload_file.read())
+            # 假设DataFrame的第一列是'dataset_name'，其余列为数据
+            data_list = df.to_dict(orient='records')  # 转换其余行为字典列表
 
+            # 检查data_list是否为空
+            if not data_list:
+                raise ValueError("Excel文件中没有有效数据.")
+
+            await self._dataset.add_data(dataset_name, data_list)
+            return JSONResponse(content=None)
+
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="Data file not found.")
+        except ValueError as ve:
+            logger.error(ve)
+            raise HTTPException(status_code=400, detail="Invalid data format.")
+        except KeyError as ke:
+            raise HTTPException(status_code=400, detail="数据集名称不存在")
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
 
 def run(
     supervisor_address: str,
