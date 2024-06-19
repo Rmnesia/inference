@@ -2,8 +2,9 @@ import json
 from pathlib import Path
 
 class DatasetReader:
-    def __init__(self, data_path="./xinference/factory/data/dataset_info.json"):
-        self.data_path = data_path
+    def __init__(self, data_directory="./xinference/factory/data/"):
+        self.data_directory = data_directory
+        self.data_path = data_directory+"dataset_info.json"
 
     def transform_data(self, entry):
         dataset_name = entry[0]
@@ -65,7 +66,7 @@ class DatasetReader:
                 file_name = f"{dataset_name}{timestamp}.json"
                 # 确保当前目录存在，然后写入JSON数据到文件
                 with open(file_name, 'w') as json_file:
-                    pass
+                    json.dump([], json_file, ensure_ascii=False, indent=4)
 
                 # 将新键值对添加到已有数据中
                 data[dataset_name] = {
@@ -90,6 +91,51 @@ class DatasetReader:
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to decode JSON: {e}")
 
+    async def delete_dataset(self, dataset_name: str):
+        """异步读取并删除dataset_info.json"""
+        import os
+        try:
+            with open(self.data_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+                # 检查新键是否已存在，如果存在则抛出异常
+                if dataset_name in data:
+                    file_name = data[dataset_name]['file_name']
+                    del data[dataset_name]
+                else:
+                    raise KeyError(f"键 '{dataset_name}' 不存在于字典中。")
+                os.remove(file_name)
 
+            with open(self.data_path, 'w+', encoding='utf-8') as file:
+                # 将更新后的内容写回原JSON文件
+                json.dump(data, file, ensure_ascii=False, indent=4)
 
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found: {self.data_path}")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to decode JSON: {e}")
+
+    async def add_data(self, dataset_name: str, data_list):
+        """异步读取dataset_info.json并添加一条数据"""
+        import os
+        try:
+            with open(data_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+                # 检查新键是否已存在，如果存在则抛出异常
+                if dataset_name in data:
+                    file_name = self.data_directory + data[dataset_name]['file_name']
+                else:
+                    raise KeyError(f"键 '{dataset_name}' 不存在于字典中。")
+
+            with open(file_name, 'r', encoding='utf-8') as file:
+                # 将更新后的内容写回原JSON文件
+                data = json.load(file)
+                for item in data_list:
+                    data.append(item)
+            with open(file_name, 'w+', encoding='utf-8') as file:
+                json.dump(data, file, ensure_ascii=False, indent=4)
+
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found: {self.data_path}")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to decode JSON: {e}")
 

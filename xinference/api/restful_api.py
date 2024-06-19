@@ -527,6 +527,26 @@ class RESTfulAPI:
                 else None
             ),
         )
+        self._router.add_api_route(
+            "/v1/dataset/delete_dataset",
+            self.delete_dataset,
+            methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
+        self._router.add_api_route(
+            "/v1/dataset/add_data",
+            self.add_data,
+            methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
 
 
         if XINFERENCE_DISABLE_METRICS:
@@ -1614,6 +1634,42 @@ class RESTfulAPI:
             logger.error(e)
             raise HTTPException(status_code=500, detail="Internal Server Error.")
 
+    async def delete_dataset(self, request: Request) -> JSONResponse:
+        data = await request.json()
+        dataset_name = data['dataset_name']
+        try:
+            await self._dataset.delete_dataset(dataset_name)
+            return JSONResponse(content=None)
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="Data file not found.")
+        except ValueError as ve:
+            logger.error(ve)
+            raise HTTPException(status_code=400, detail="Invalid data format.")
+        except KeyError as ke:
+            raise HTTPException(status_code=400, detail="数据集名称不存在")
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
+
+    async def add_data(self, request: Request) -> JSONResponse:
+        data = await request.json()
+        dataset_name = data['dataset_name']
+        data_list = data['data_list']
+        try:
+            await self._dataset.add_data(dataset_name, data_list)
+            return JSONResponse(content=None)
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="Data file not found.")
+        except ValueError as ve:
+            logger.error(ve)
+            raise HTTPException(status_code=400, detail="Invalid data format.")
+        except KeyError as ke:
+            raise HTTPException(status_code=400, detail="数据集名称不存在")
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
 
 def run(
     supervisor_address: str,
