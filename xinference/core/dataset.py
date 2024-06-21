@@ -29,7 +29,9 @@ class DatasetReader:
             "dataset_type": dataset_type,
             "dataset_desc": "这是一个数据集" if "description" not in entry[1] else entry[1].get(
                 "description", "这是一个数据集"),
-            "dataset_tags": tags
+            "dataset_tags": tags,
+            "create_time": entry[1].get("create_time"),
+            "dataset_num": entry[1].get("dataset_num")
         }
 
         return transformed_entry
@@ -62,6 +64,7 @@ class DatasetReader:
                     raise KeyError(f"键 '{dataset_name}' 已经存在于字典中。")
 
                 timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+                create_time = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
                 # 拼接文件名
                 file_name = f"{dataset_name}{timestamp}.json"
                 # 确保当前目录存在，然后写入JSON数据到文件
@@ -71,6 +74,8 @@ class DatasetReader:
                 # 将新键值对添加到已有数据中
                 data[dataset_name] = {
                     "file_name": file_name,
+                    "dataset_num": 0,
+                    "create_time":create_time,
                     "description": dataset_desc
                 }
 
@@ -121,9 +126,13 @@ class DatasetReader:
                 data = json.load(file)
                 # 检查新键是否已存在，如果存在则抛出异常
                 if dataset_name in data:
+                    data[dataset_name]["dataset_num"] += len(data_list)
                     file_name = self.data_directory + data[dataset_name]['file_name']
                 else:
                     raise KeyError(f"键 '{dataset_name}' 不存在于字典中。")
+            with open(self.data_path, 'w+', encoding='utf-8') as file:
+                # 将更新后的内容写回原JSON文件
+                json.dump(data, file, ensure_ascii=False, indent=4)
 
             with open(file_name, 'r', encoding='utf-8') as file:
                 # 将更新后的内容写回原JSON文件
