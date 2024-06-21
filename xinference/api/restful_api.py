@@ -41,7 +41,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from sse_starlette.sse import EventSourceResponse
@@ -498,6 +498,17 @@ class RESTfulAPI:
         self._router.add_api_route(
             "/v1/cached/list_cached_models",
             self.list_cached_models,
+            methods=["GET"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
+
+        self._router.add_api_route(
+            "/v1/dataset/download_template/{file_type}/{file_name}",
+            self.download_template,
             methods=["GET"],
             dependencies=(
                 [Security(self._auth_service, scopes=["models:list"])]
@@ -1619,6 +1630,25 @@ class RESTfulAPI:
         except Exception as e:
             logger.error(e, exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
+
+    async def download_template(self, file_type: str, file_name: str) -> FileResponse:
+        try:
+            if file_type == "excel":
+                if file_name == 'QA问答模板.xlsx':
+                    file_path = "./xinference/factory/examples/QA问答模板.xlsx"
+                elif file_name == '语料模板.xlsx':
+                    file_path = "./xinference/factory/examples/语料模板.xlsx"
+                return FileResponse(path=file_path,
+                                    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            elif file_type == "json":
+                if file_name == 'QA问答模板.json':
+                    file_path = "./xinference/factory/examples/QA问答模板.json"
+                elif file_name == '语料模板.json':
+                    file_path = "./xinference/factory/examples/语料模板.json"
+                return FileResponse(path=file_path,
+                                    media_type="application/json")
+        except FileNotFoundError:
+            return {"error": "文件未找到"}
 
     async def list_dataset(self) -> JSONResponse:
         try:
