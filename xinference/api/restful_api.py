@@ -1746,14 +1746,24 @@ class RESTfulAPI:
     async def upload_data(self, dataset_name:str = Form(...), upload_file: UploadFile = File(...)) -> JSONResponse:
         import pandas as pd
         try:
-            # 读取Excel文件
-            df = pd.read_excel(await upload_file.read())
-            # 假设DataFrame的第一列是'dataset_name'，其余列为数据
-            data_list = df.to_dict(orient='records')  # 转换其余行为字典列表
+            # 获取文件后缀
+            file_extension = upload_file.filename.split('.')[-1].lower()
+            # 初始化data_list
+            data_list: List[Dict] = []
+            if file_extension == 'xlsx' or file_extension == 'xls':
+                # 处理Excel文件
+                df = pd.read_excel(await upload_file.read())
+                data_list = df.to_dict(orient='records')
+            elif file_extension == 'json':
+                # 处理JSON文件
+                contents = await upload_file.read()
+                data_list = json.loads(contents.decode('utf-8'))
+            else:
+                raise ValueError(f"不支持的文件格式，仅支持Excel (.xlsx, .xls)和JSON。")
 
             # 检查data_list是否为空
             if not data_list:
-                raise ValueError("Excel文件中没有有效数据.")
+                raise ValueError("上传的文件不包含任何数据")
 
             await self._dataset.add_data(dataset_name, data_list)
             return JSONResponse(content=None)
