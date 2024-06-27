@@ -1,18 +1,27 @@
 {
+  "alpaca_en": {
+    "file_name": "alpaca_data_en_52k.json",
+    "dataset_num": 52002
+  },
   "alpaca_zh": {
-    "file_name": "alpaca_data_zh_51k.json"
+    "file_name": "alpaca_data_zh_51k.json",
+    "dataset_num": 51461
   },
   "alpaca_gpt4_en": {
-    "file_name": "alpaca_gpt4_data_en.json"
+    "file_name": "alpaca_gpt4_data_en.json",
+    "dataset_num": 52002
   },
   "alpaca_gpt4_zh": {
-    "file_name": "alpaca_gpt4_data_zh.json"
+    "file_name": "alpaca_gpt4_data_zh.json",
+    "dataset_num": 48818
   },
   "identity": {
-    "file_name": "identity.json"
+    "file_name": "identity.json",
+    "dataset_num": 91
   },
   "oaast_sft_zh": {
     "file_name": "oaast_sft_zh.json",
+    "dataset_num": 689,
     "columns": {
       "prompt": "instruction",
       "query": "input",
@@ -22,6 +31,7 @@
   },
   "lima": {
     "file_name": "lima.json",
+    "dataset_num": 1029,
     "columns": {
       "prompt": "instruction",
       "query": "input",
@@ -31,6 +41,7 @@
   },
   "glaive_toolcall": {
     "file_name": "glaive_toolcall_10k.json",
+    "dataset_num": 10000,
     "formatting": "sharegpt",
     "columns": {
       "messages": "conversations",
@@ -39,6 +50,7 @@
   },
   "mllm_demo": {
     "file_name": "mllm_demo.json",
+    "dataset_num": 6,
     "formatting": "sharegpt",
     "columns": {
       "messages": "messages",
@@ -53,6 +65,7 @@
   },
   "oaast_rm_zh": {
     "file_name": "oaast_rm_zh.json",
+    "dataset_num": 775,
     "columns": {
       "prompt": "instruction",
       "query": "input",
@@ -63,14 +76,17 @@
   },
   "comparison_gpt4_en": {
     "file_name": "comparison_gpt4_data_en.json",
+    "dataset_num": 36441,
     "ranking": true
   },
   "comparison_gpt4_zh": {
     "file_name": "comparison_gpt4_data_zh.json",
+    "dataset_num": 36441,
     "ranking": true
   },
   "orca_rlhf": {
     "file_name": "orca_rlhf.json",
+    "dataset_num": 12859,
     "ranking": true,
     "columns": {
       "prompt": "question",
@@ -78,14 +94,9 @@
       "system": "system"
     }
   },
-  "wiki_demo": {
-    "file_name": "wiki_demo.txt",
-    "columns": {
-      "prompt": "text"
-    }
-  },
   "c4_demo": {
     "file_name": "c4_demo.json",
+    "dataset_num": 300,
     "columns": {
       "prompt": "text"
     }

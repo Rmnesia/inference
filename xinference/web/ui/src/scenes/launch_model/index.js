@@ -70,7 +70,7 @@ const LaunchModel = () => {
   useEffect(() => {})
   return (
     <Box m="20px">
-      <Title title="Launch Model" />
+      <Title title="模型管理" />
       <ErrorMessageSnackBar />
       <TabContext value={value}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

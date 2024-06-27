@@ -25,7 +25,7 @@ const RegisterModel = () => {
 
   return (
     <Box m="20px">
-      <Title title="Register Model" />
+      <Title title="模型注册" />
       <ErrorMessageSnackBar />
       <TabContext value={tabValue}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

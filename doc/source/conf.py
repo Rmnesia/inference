@@ -17,9 +17,9 @@ import os
 
 # -- Project information -----------------------------------------------------
 
-project = 'Xinference'
-copyright = '2023, Xorbits Inc.'
-author = 'xorbitsai'
+project = '海鲲矩阵'
+copyright = '2024, 714 Inc.'
+author = '714'
 
 
 # -- General configuration ---------------------------------------------------

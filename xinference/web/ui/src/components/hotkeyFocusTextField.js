@@ -46,7 +46,7 @@ const HotkeyFocusTextField = ({
           !isFocused && !value ? (
             <InputAdornment position="end">
               <Typography color="textSecondary" style={{ fontSize: 'inherit' }}>
-                Type {hotkey} to search
+                搜索
               </Typography>
             </InputAdornment>
           ) : null,

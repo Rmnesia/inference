@@ -2,7 +2,7 @@ import { AppBar, Box, Toolbar } from '@mui/material'
 import Typography from '@mui/material/Typography'
 import * as React from 'react'
 
-import icon from '../../media/icon.webp'
+import icon from '../../media/logo.png'
 
 export default function Header() {
   return (
@@ -23,12 +23,12 @@ export default function Header() {
           src={icon}
           height="60px"
           width="60px"
-          borderRadius="50%"
+          // borderRadius="50%"
           sx={{ objectFit: 'cover', mr: 1.5 }}
         />
         <Box textAlign="left">
           <Typography fontWeight="bold" fontSize="1.7rem">
-            {'Xinference'}
+            {'海鲲矩阵'}
           </Typography>
         </Box>
       </Toolbar>
