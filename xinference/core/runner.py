@@ -1,0 +1,31 @@
+from pydantic import BaseModel
+class TrainRequest(BaseModel):
+    stage: str = "sft"
+    do_train: str = 'True'
+    model_name_or_path: str = "/data/model/Phi3-3.8B"
+    preprocessing_num_workers: str = '16'
+    finetuning_type: str = "lora"
+    template: str = "phi"
+    flash_attn: str = "auto"
+    dataset_dir: str = "./xinference/factory/data/"
+    dataset: list = ["identity"]
+    cutoff_len: str = '1024'
+    learning_rate: str = '5e-05'
+    num_train_epochs: str = '5.0'
+    max_samples: str = '1000'
+    per_device_train_batch_size: str = '1'
+    gradient_accumulation_steps: str = '8'
+    lr_scheduler_type: str = "cosine"
+    max_grad_norm: str = '1.0'
+    logging_steps: str = '10'
+    save_steps: str = '500'
+    warmup_steps: str = '0'
+    optim: str = "adamw_torch"
+    packing: str = 'False'
+    report_to: str = "none"
+    fp16: str = 'True'
+    plot_loss: str = 'False'
+    lora_rank: str = '8'
+    lora_alpha: str = '16'
+    lora_dropout: str = '0'
+    lora_target: str = "qkv_proj"

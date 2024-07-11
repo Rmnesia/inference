@@ -41,7 +41,7 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from sse_starlette.sse import EventSourceResponse
@@ -57,6 +57,7 @@ from ..core.event import Event, EventCollectorActor, EventType
 from ..core.supervisor import SupervisorActor
 from ..core.utils import json_dumps
 from ..core.dataset import DatasetReader
+from ..core.runner import TrainRequest
 from ..types import (
     SPECIAL_TOOL_PROMPT,
     ChatCompletion,
@@ -148,6 +149,7 @@ class BuildGradioImageInterfaceRequest(BaseModel):
     controlnet: Union[None, List[Dict[str, Union[str, None]]]]
     model_revision: str
 
+process = None
 
 class RESTfulAPI:
     def __init__(
@@ -572,6 +574,26 @@ class RESTfulAPI:
             "/v1/dataset/upload_data",
             self.upload_data,
             methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
+        self._router.add_api_route(
+            "/v1/runner/training",
+            self.training,
+            methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
+        self._router.add_api_route(
+            "/v1/runner/terminate",
+            self.terminate,
+            methods=["GET"],
             dependencies=(
                 [Security(self._auth_service, scopes=["models:list"])]
                 if self.is_authenticated()
@@ -1753,6 +1775,7 @@ class RESTfulAPI:
             if file_extension == 'xlsx' or file_extension == 'xls':
                 # 处理Excel文件
                 df = pd.read_excel(await upload_file.read())
+                df.fillna('', inplace=True)
                 data_list = df.to_dict(orient='records')
             elif file_extension == 'json':
                 # 处理JSON文件
@@ -1779,6 +1802,130 @@ class RESTfulAPI:
         except Exception as e:
             logger.error(e)
             raise HTTPException(status_code=500, detail="Internal Server Error.")
+
+    async def training(self, request: Request) -> StreamingResponse:
+        import datetime
+        import subprocess
+        from typing import Any
+        import os
+        import select
+        import threading
+        # 从请求体中获取参数
+        params = await request.json()
+        train_request = TrainRequest(**params)
+        create_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        output_dir = f"saves/{train_request.model_name_or_path}/lora/train_{create_time}"
+
+        # 设置环境变量
+        os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+        os.environ['NCCL_P2P_DISABLE'] = '1'
+        os.environ['NCCL_IB_DISABLE'] = '1'
+        # 构建命令行参数
+        command = [
+            'llamafactory-cli', 'train',
+            '--stage', train_request.stage,
+            '--do_train', train_request.do_train,
+            '--model_name_or_path', train_request.model_name_or_path,
+            '--preprocessing_num_workers', train_request.preprocessing_num_workers,
+            '--finetuning_type', train_request.finetuning_type,
+            '--template', train_request.template,
+            '--flash_attn', train_request.flash_attn,
+            '--dataset_dir', train_request.dataset_dir,
+            '--dataset', ','.join(train_request.dataset),
+            '--cutoff_len', train_request.cutoff_len,
+            '--learning_rate', train_request.learning_rate,
+            '--num_train_epochs', train_request.num_train_epochs,
+            '--max_samples', train_request.max_samples,
+            '--per_device_train_batch_size', train_request.per_device_train_batch_size,
+            '--gradient_accumulation_steps', train_request.gradient_accumulation_steps,
+            '--lr_scheduler_type', train_request.lr_scheduler_type,
+            '--max_grad_norm', train_request.max_grad_norm,
+            '--logging_steps', train_request.logging_steps,
+            '--save_steps', train_request.save_steps,
+            '--warmup_steps', train_request.warmup_steps,
+            '--optim', train_request.optim,
+            '--packing', train_request.packing,
+            '--report_to', train_request.report_to,
+            '--output_dir', output_dir,
+            '--fp16', train_request.fp16,
+            '--plot_loss', train_request.plot_loss,
+            '--lora_rank', train_request.lora_rank,
+            '--lora_alpha', train_request.lora_alpha,
+            '--lora_dropout', train_request.lora_dropout,
+            '--lora_target', train_request.lora_target
+        ]
+
+        # 尝试执行命令行训练过程
+        async def stream_output():
+            try:
+                global process
+                # 启动进程
+                process = await asyncio.create_subprocess_exec(
+                    *command,
+                    stdout=asyncio.subprocess.PIPE
+                )
+                discard = False
+                while True:
+                    try:
+                        output = await asyncio.wait_for(process.stdout.readline(), timeout=1.0)
+                        output = output.decode().strip()
+                        if output:
+                            if "'loss':" in output:
+                                yield f"GRAPH: {output}<END>"
+                            else:
+                                yield f"OUT: {output}<END>"
+                    except asyncio.TimeoutError:
+                        # 超时后检查进程是否结束
+                        if process.returncode is not None:
+                            break
+                    except asyncio.LimitOverrunError as e:
+                        print(f"Overrun detected, buffer length now={e.consumed}")
+                        chunk = await process.stdout.readexactly(e.consumed)
+                        if not discard:
+                            yield f"OUT:HUGE DATA {chunk}<END>"
+                        discard = True
+
+                    if process.returncode is not None:
+                        break
+                exit_code = await process.wait()
+                print("训练执行完毕，退出码：", exit_code)
+                if exit_code != 0:
+                    raise HTTPException(status_code=500, detail="训练过程中发生错误。")
+
+            except subprocess.CalledProcessError as cpe:
+                logger.error(cpe.stderr)
+                raise HTTPException(status_code=500, detail="An error occurred during training.")
+
+            except asyncio.CancelledError:
+                # 如果有取消信号（如Ctrl-C），杀死子进程
+                process.terminate()
+                raise HTTPException(status_code=500, detail="训练过程被用户终止。")
+
+            except subprocess.CalledProcessError as cpe:
+                logger.error(cpe.stderr)
+                raise HTTPException(status_code=500, detail="An error occurred during training.")
+            except FileNotFoundError as fe:
+                logger.error(fe)
+                raise HTTPException(status_code=404, detail="Data file not found.")
+            except ValueError as ve:
+                logger.error(ve)
+                raise HTTPException(status_code=400, detail="输出显示出现错误")
+            except Exception as e:
+                logger.error(e)
+                raise HTTPException(status_code=500, detail="Internal Server Error.")
+            finally:
+                process.terminate()
+
+        return StreamingResponse(stream_output(), media_type="text/plain")
+
+    async def terminate(self) -> JSONResponse:
+        try:
+            process.terminate()
+            return JSONResponse(content={"info":"训练进程已停止"})
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
+
 
 def run(
     supervisor_address: str,

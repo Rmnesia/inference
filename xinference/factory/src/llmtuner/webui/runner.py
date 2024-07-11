@@ -299,7 +299,7 @@ class Runner:
         while self.trainer is not None:
             if self.aborted:
                 yield {
-                    output_box: ALERTS["info_aborting"][lang],
+                    output_box: ALERTS["info_aborting"][lang],aa
                     progress_bar: gr.Slider(visible=False),
                 }
             else:
@@ -332,7 +332,7 @@ class Runner:
 
         return_dict = {
             output_box: self._finalize(lang, finish_info),
-            progress_bar: gr.Slider(visible=False),
+            progresas_bar: gr.Slider(visible=False),
         }
         yield return_dict
 
