@@ -22,6 +22,11 @@ import pprint
 import sys
 import time
 import warnings
+import datetime
+import subprocess
+from typing import Any
+import select
+import threading
 from typing import Any, Dict, List, Optional, Union
 
 import gradio as gr
@@ -589,7 +594,17 @@ class RESTfulAPI:
                 if self.is_authenticated()
                 else None
             ),
-        )
+        ),
+        self._router.add_api_route(
+            "/v1/runner/advanced_training",
+            self.advanced_training,
+            methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        ),
         self._router.add_api_route(
             "/v1/runner/terminate",
             self.terminate,
@@ -1804,12 +1819,6 @@ class RESTfulAPI:
             raise HTTPException(status_code=500, detail="Internal Server Error.")
 
     async def training(self, request: Request) -> StreamingResponse:
-        import datetime
-        import subprocess
-        from typing import Any
-        import os
-        import select
-        import threading
         # 从请求体中获取参数
         params = await request.json()
         train_request = TrainRequest(**params)
@@ -1854,6 +1863,91 @@ class RESTfulAPI:
             '--lora_dropout', train_request.lora_dropout,
             '--lora_target', train_request.lora_target
         ]
+
+        # 尝试执行命令行训练过程
+        async def stream_output():
+            try:
+                global process
+                # 启动进程
+                process = await asyncio.create_subprocess_exec(
+                    *command,
+                    stdout=asyncio.subprocess.PIPE
+                )
+                discard = False
+                while True:
+                    try:
+                        output = await asyncio.wait_for(process.stdout.readline(), timeout=1.0)
+                        output = output.decode().strip()
+                        if output:
+                            if "'loss':" in output:
+                                yield f"GRAPH: {output}<END>"
+                            else:
+                                yield f"OUT: {output}<END>"
+                    except asyncio.TimeoutError:
+                        # 超时后检查进程是否结束
+                        if process.returncode is not None:
+                            break
+                    except asyncio.LimitOverrunError as e:
+                        print(f"Overrun detected, buffer length now={e.consumed}")
+                        chunk = await process.stdout.readexactly(e.consumed)
+                        if not discard:
+                            yield f"OUT:HUGE DATA {chunk}<END>"
+                        discard = True
+
+                    if process.returncode is not None:
+                        break
+                exit_code = await process.wait()
+                print("训练执行完毕，退出码：", exit_code)
+                if exit_code != 0:
+                    raise HTTPException(status_code=500, detail="训练过程中发生错误。")
+
+            except subprocess.CalledProcessError as cpe:
+                logger.error(cpe.stderr)
+                raise HTTPException(status_code=500, detail="An error occurred during training.")
+
+            except asyncio.CancelledError:
+                # 如果有取消信号（如Ctrl-C），杀死子进程
+                process.terminate()
+                raise HTTPException(status_code=500, detail="训练过程被用户终止。")
+
+            except subprocess.CalledProcessError as cpe:
+                logger.error(cpe.stderr)
+                raise HTTPException(status_code=500, detail="An error occurred during training.")
+            except FileNotFoundError as fe:
+                logger.error(fe)
+                raise HTTPException(status_code=404, detail="Data file not found.")
+            except ValueError as ve:
+                logger.error(ve)
+                raise HTTPException(status_code=400, detail="输出显示出现错误")
+            except Exception as e:
+                logger.error(e)
+                raise HTTPException(status_code=500, detail="Internal Server Error.")
+            finally:
+                process.terminate()
+
+        return StreamingResponse(stream_output(), media_type="text/plain")
+
+    async def advanced_training(self, request: Request) -> StreamingResponse:
+        # 从请求体中获取参数
+        params = await request.json()
+        create_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        output_dir = f"saves/{params['model_name_or_path']}/lora/train_{create_time}"
+
+        def dict_to_command_list(dictionary, output_dir, prefix='--'):
+            command_list = ['llamafactory-cli', 'train']
+            for key, value in dictionary.items():
+                command_list.append(prefix + key)
+                command_list.append(str(value))
+            command_list.append('--output_dir')
+            command_list.append(output_dir)
+            return command_list
+
+        command = dict_to_command_list(params, output_dir)
+
+        # 设置环境变量
+        os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+        os.environ['NCCL_P2P_DISABLE'] = '1'
+        os.environ['NCCL_IB_DISABLE'] = '1'
 
         # 尝试执行命令行训练过程
         async def stream_output():
