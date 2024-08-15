@@ -614,6 +614,26 @@ class RESTfulAPI:
                 if self.is_authenticated()
                 else None
             ),
+        ),
+        self._router.add_api_route(
+            "/logs/list_logs",
+            self.list_logs,
+            methods=["GET"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
+        self._router.add_api_route(
+            "/logs/get_logs",
+            self.get_logs,
+            methods=["GET"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
         )
 
 
@@ -1823,7 +1843,8 @@ class RESTfulAPI:
         params = await request.json()
         train_request = TrainRequest(**params)
         create_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        output_dir = f"saves/{train_request.model_name_or_path}/lora/train_{create_time}"
+        basename = os.path.basename(train_request.model_name_or_path)
+        output_dir = f"saves/{basename}/lora/train_{create_time}"
 
         # 设置环境变量
         os.environ['CUDA_VISIBLE_DEVICES'] = '1'
@@ -1931,7 +1952,8 @@ class RESTfulAPI:
         # 从请求体中获取参数
         params = await request.json()
         create_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        output_dir = f"saves/{params['model_name_or_path']}/lora/train_{create_time}"
+        basename = os.path.basename(params['model_name_or_path'])
+        output_dir = f"saves/{basename}/lora/train_{create_time}"
 
         def dict_to_command_list(dictionary, output_dir, prefix='--'):
             command_list = ['llamafactory-cli', 'train']
@@ -2019,6 +2041,61 @@ class RESTfulAPI:
         except Exception as e:
             logger.error(e)
             raise HTTPException(status_code=500, detail="Internal Server Error.")
+
+    async def list_logs(self) -> JSONResponse:
+        try:
+            directory = 'saves/'
+            file_paths = []
+            if os.path.exists(directory):
+                folders = ['lora', 'full', 'freeze']
+                for model in os.listdir(directory):
+                    for folder in folders:
+                        folder_path = os.path.join(directory+model, folder)
+                        if os.path.exists(folder_path):
+                            data = await (await self._get_supervisor_ref()).get_model_registration(
+                                "LLM", model
+                            )
+                            file_paths.append({
+                                "name": model,
+                                "info": data,
+                                "path": []
+                            })
+                            for file_name in os.listdir(folder_path):
+                                file_paths[-1]["path"].append(os.path.join(folder, file_name))
+            return JSONResponse(content={"model_list":file_paths})
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="Data file not found.")
+        except ValueError as ve:
+            logger.error(ve)
+            raise HTTPException(status_code=400, detail="Invalid data format.")
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
+
+    async def get_logs(self, name: str) -> JSONResponse:
+        try:
+            trainer_log = os.path.join('saves/'+name, "trainer_log.jsonl")
+            all_results = os.path.join('saves/'+name, "all_results.json")
+            if os.path.exists(trainer_log):
+                with open(trainer_log, 'r') as file:
+                    trainer_log = file.read()
+            if os.path.exists(all_results):
+                with open(all_results, 'r') as file:
+                    all_results = file.read()
+            if all_results:
+                all_results = json.loads(all_results)
+            if trainer_log:
+                trainer_log = [json.loads(line) for line in trainer_log.split("\n") if line]
+            if trainer_log and all_results:
+                return JSONResponse(content={"trainer_log":trainer_log, "all_results":all_results})
+            else:
+                raise HTTPException(status_code=404, detail="日志信息为空")
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="日志未找到")
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="日志信息有误")
 
 
 def run(
