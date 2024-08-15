@@ -28,7 +28,7 @@ export default function Header() {
         />
         <Box textAlign="left">
           <Typography fontWeight="bold" fontSize="1.7rem">
-            {'海鲲矩阵'}
+            {'部训管推'}
           </Typography>
         </Box>
       </Toolbar>

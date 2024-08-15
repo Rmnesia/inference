@@ -8,7 +8,7 @@ import {
     Grid,
     Grow, InputLabel, MenuItem, MenuList,
     Popper, Select,
-    Stack, tableCellClasses, TableContainer, TablePagination,
+    Stack, TablePagination,
     TextField
 } from '@mui/material'
 import React, {useContext, useEffect, useRef, useState} from 'react'
@@ -27,17 +27,11 @@ import styles from "./styles/modelCardStyle";
 import {RocketLaunchOutlined, UndoOutlined} from "@mui/icons-material";
 import Paper from "@mui/material/Paper";
 import SuccessMessageSnackBar from "../../components/successMessageSnackBar";
-import {styled} from "@mui/system";
-import TableCell from "@mui/material/TableCell";
-import TableRow from "@mui/material/TableRow";
-import Table from "@mui/material/Table";
-import TableHead from "@mui/material/TableHead";
-import TableBody from "@mui/material/TableBody";
 
 const DatasetDetail = () => {
-    const {id, type} = useParams();
+    const {id,type} = useParams();
     const name = id;
-    const datasetType = type;
+    const datasetType=type;
     console.log(id)
     let endPoint = useContext(ApiContext).endPoint
     const parentRef = useRef(null)
@@ -55,7 +49,7 @@ const DatasetDetail = () => {
     //新增数据是否显示抽屉
     const [isShow, setIsShow] = useState(false)
     //修改数据是否显示抽屉
-    const [isEditShow, setIsEditShow] = useState(false);
+    const [isEditShow,setIsEditShow]=useState(false);
     //问题
     const [instruction, setInstruction] = useState('')
     //额外要求
@@ -71,7 +65,7 @@ const DatasetDetail = () => {
     //文件类型项
     const fileTypeOptions = [{name: 'Excel', value: 'excel'}, {name: 'Json', value: 'json'}]
     //文件模版
-    const fileTemplates = {"qa": "QA问答模板", "text": "语料模板"};
+    const fileTemplates={"qa":"QA问答模板","text":"语料模板"};
     //文件
     const [upload_file, setUpload_file] = useState(null);
     // Split button
@@ -79,28 +73,6 @@ const DatasetDetail = () => {
     const [open, setOpen] = useState(false);
     const anchorRef = useRef(null)
     const [selectedIndex, setSelectedIndex] = useState(0);
-
-    const StyledTableCell = styled(TableCell)(({theme}) => ({
-        [`&.${tableCellClasses.head}`]: {
-            backgroundColor: theme.palette.action.hover,//common.black,
-            fontWeight: 'bold',
-            fontSize: 14,
-
-        },
-        [`&.${tableCellClasses.body}`]: {
-            fontSize: 14,
-        },
-    }));
-
-    const StyledTableRow = styled(TableRow)(({theme}) => ({
-        '&:nth-of-type(even)': {
-            backgroundColor: theme.palette.action.hover,
-        },
-        // hide last border
-        '&:last-child td, &:last-child th': {
-            border: 0,
-        },
-    }));
 
     //直接点击添加按钮
     const handleClick = () => {
@@ -129,10 +101,10 @@ const DatasetDetail = () => {
         setSearchTerm(event.target.value)
         update()
     }
-    //   const [paginationModel, setPaginationModel] = React.useState({
-    //   page: 0,
-    //   pageSize: 100,
-    // });
+  //   const [paginationModel, setPaginationModel] = React.useState({
+  //   page: 0,
+  //   pageSize: 100,
+  // });
 
 
     //获取数据集数据
@@ -193,16 +165,16 @@ const DatasetDetail = () => {
             }
         }
     }
-    const handlePageChange = (e, newPage) => {
-        setPage_num(newPage);
-        console.log(page_num)
-    };
+    const handlePageChange = (e,newPage) => {
+    setPage_num(newPage);
+    console.log(page_num)
+  };
 
-    const handlePageSizeChange = (e) => {
-        setPage_size(e.target.value);
-        setPage_num(0)
-        console.log(page_size)
-    };
+  const handlePageSizeChange = (e) => {
+    setPage_size(e.target.value);
+    setPage_num(0)
+    console.log(page_size)
+  };
     //单条添加数据集数据
     const addDatasetData = (isCallingApi) => {
         if (
@@ -213,7 +185,7 @@ const DatasetDetail = () => {
             return
 
         try {
-            if (isShow) {
+            if(isShow) {
                 setIsCallingApi(true)
                 fetcher(`${endPoint}/v1/dataset/add_data`, {
                     method: 'POST',
@@ -251,7 +223,7 @@ const DatasetDetail = () => {
                     }
                 })
             }
-            if (isEditShow) {
+            if(isEditShow){
                 console.log('update.....')
             }
         } catch (error) {
@@ -302,10 +274,10 @@ const DatasetDetail = () => {
         }
     }
     //下载模版
-    const downloadTemplate = () => {
-        try {
+    const downloadTemplate=()=>{
+         try {
             setIsCallingApi(true)
-            const url = `${endPoint}/v1/dataset/download_template/${fileType}/${fileTemplates[datasetType] + (fileType == "excel" ? ".xlsx" : ".json")}`;
+             const url=`${endPoint}/v1/dataset/download_template/${fileType}/${fileTemplates[datasetType]+(fileType=="excel"?".xlsx":".json")}`;
             fetcher(url, {
                 method: 'GET',
             }).then((response) => {
@@ -338,60 +310,60 @@ const DatasetDetail = () => {
     //     // eslint-disable-next-line
     // }, [isCallingApi, cookie.token])
 
-    useEffect(() => {
-        update(isCallingApi)
-    }, [isCallingApi, page_num, page_size, cookie.token])
+    useEffect(()=>{
+         update(isCallingApi)
+    },[isCallingApi,page_num,page_size,cookie.token])
     const detailColumns = [
-        ...(datasetType === "qa" ? (name.indexOf('rlhf') >= 0 ? [
-                {
-                    field: 'question',
-                    headerName: '问题',
-                    flex: 1,
-                },
-                {
-                    field: 'answer',
-                    headerName: '输出',
-                    flex: 1,
-                    renderCell: ({row}) => {
-                        return (
-                            <Box>
-                                {row.answer.map((cur) => {
-                                    return (<div title={cur}>{cur}</div>)
-                                })
-                                }
-                            </Box>
-                        )
-                    }
-                },
-                {
-                    field: 'system',
-                    headerName: '系统Prompt',
-                    flex: 1,
-                }
-            ] : [
-                {
-                    field: 'instruction',
-                    headerName: '问题',
-                    flex: 1,
-                },
-                {
-                    field: 'input',
-                    headerName: '额外要求',
-                    flex: 1,
-                },
-                {
-                    field: 'output',
-                    headerName: '输出',
-                    flex: 1,
-                },
-                {
-                    field: 'system',
-                    headerName: '系统Prompt',
-                    minWidth: 100,
-                }]) : [{
-                field: 'text',
-                headerName: '文本',
-                flex: 1,
+        ...(datasetType==="qa"?(name.indexOf('rlhf')>=0?[
+            {
+            field: 'question',
+            headerName: '问题',
+            flex: 1,
+        },
+        {
+            field: 'answer',
+            headerName: '输出',
+            flex: 1,
+            renderCell:({row})=>{
+                return (
+                    <Box>
+                        {  row.answer.map((cur)=>{
+                        return (<div title={cur}>{cur}</div>)
+                    })
+                        }
+                    </Box>
+                )
+            }
+        },
+        {
+            field: 'system',
+            headerName: '系统Prompt',
+            flex: 1,
+        }
+            ]:[
+        {
+            field: 'instruction',
+            headerName: '问题',
+            flex: 1,
+        },
+        {
+            field: 'input',
+            headerName: '额外要求',
+             flex: 1,
+        },
+        {
+            field: 'output',
+            headerName: '输出',
+            flex: 1,
+        },
+        {
+            field: 'system',
+            headerName: '系统Prompt',
+            minWidth: 100,
+        }]):[{
+              field: 'text',
+            headerName: '文本',
+            flex: 1,
             }]
         ),
         {
@@ -403,9 +375,9 @@ const DatasetDetail = () => {
             disableColumnMenu: true,
             renderCell: ({row}) => {
                 const url = row.url
-                // const openUrl = `${endPoint}/` + url
-                //    const closeUrl = `${endPoint}/v1/models/` + url
-                //    const gradioUrl = `${endPoint}/v1/ui/` + url
+               // const openUrl = `${endPoint}/` + url
+                const closeUrl = `${endPoint}/v1/models/` + url
+            //    const gradioUrl = `${endPoint}/v1/ui/` + url
 
                 if (url === 'IS_LOADING') {
                     return <div></div>
@@ -430,12 +402,13 @@ const DatasetDetail = () => {
                             }}
                             onClick={() => {
                                 setIsEditShow(true);
-                                if (datasetType === "qa") {
-                                    setInstruction(row.instruction)
+                                if(datasetType==="qa") {
+                                   setInstruction(row.instruction)
                                     setInput(row.input)
                                     setOutput(row.output)
                                     setSystem(row.system)
-                                } else if (datasetType === "text") {
+                                }
+                                else if(datasetType==="text"){
                                     setText(row.text)
                                 }
                             }}
@@ -470,7 +443,6 @@ const DatasetDetail = () => {
                                     return
                                 }
                                 setIsCallingApi(true)
-                                const closeUrl = ''
                                 fetcher(closeUrl, {
                                     method: 'DELETE',
                                 })
@@ -509,7 +481,6 @@ const DatasetDetail = () => {
     ]
 
     const dataGridStyle = {
-        'display': 'none',
         '& .MuiDataGrid-cell': {
             borderBottom: 'none',
             fontSize: '14px',
@@ -578,7 +549,7 @@ const DatasetDetail = () => {
             <ErrorMessageSnackBar/>
             <div
                 style={{
-                    display: 'grid',
+                    display:'grid',
                     gridTemplateColumns: '100% 1fr',
                     columnGap: '20px',
                     margin: '0px 2rem 30px 2rem',
@@ -616,7 +587,7 @@ const DatasetDetail = () => {
                             </ButtonGroup>
                             <Popper
                                 sx={{
-                                    zIndex: 3,
+                                    zIndex: 1,
                                 }}
                                 open={open}
                                 anchorEl={anchorRef.current}
@@ -655,169 +626,44 @@ const DatasetDetail = () => {
                     </div>
                 </FormControl>
             </div>
-            <TableContainer component={Paper} sx={{maxHeight: 'calc(100vh - 250px)'}}>
-                <Table sx={{}} stickyHeader aria-label="customized table">
-                    <TableHead>
-                        <TableRow>
-                            {/*  <TableCell align="center">问题</TableCell>*/}
-                            {/*<TableCell align="center">额外要求</TableCell>*/}
-                            {/*<TableCell align="center">输出</TableCell>*/}
-                            {/*<TableCell align="center">系统Prompt</TableCell>*/}
-                            {/*<TableCell align="center">操作</TableCell>*/}
-
-                            <StyledTableCell align="center">问题</StyledTableCell>
-                            <StyledTableCell align="center">额外要求</StyledTableCell>
-                            <StyledTableCell align="center">输出</StyledTableCell>
-                            <StyledTableCell align="center">系统Prompt</StyledTableCell>
-                            <StyledTableCell align="center">操作</StyledTableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {detailData.map((row) => (
-                            <StyledTableRow key={row.id}>
-                                <StyledTableCell
-                                    align="center">{(datasetType == 'qa' ? (name.indexOf('rlhf') >= 0 ? row.question : row.instruction) : row.text)}</StyledTableCell>
-                                <StyledTableCell
-                                    align="center">{(datasetType == 'qa' ? (name.indexOf('rlhf') >= 0 ? '' : row.input) : '')}</StyledTableCell>
-                                <StyledTableCell
-                                    align="center">{(datasetType == 'qa' ? (name.indexOf('rlhf') >= 0 ? row.answer.join('\r\n') : row.output) : '')}</StyledTableCell>
-                                <StyledTableCell
-                                    align="center">{(datasetType == 'qa' ? row.system : '')}</StyledTableCell>
-                                <StyledTableCell align="center"><Box
-                                    style={{
-                                        width: '100%',
-                                        display: 'flex',
-                                        justifyContent: 'left',
-                                        alignItems: 'left',
-                                    }}
-                                >
-                                    <button
-                                        title="编辑"
-                                        style={{
-                                            borderWidth: '0px',
-                                            backgroundColor: 'transparent',
-                                            paddingLeft: '0px',
-                                            paddingRight: '10px',
-                                        }}
-                                        onClick={() => {
-                                            setIsEditShow(true);
-                                            if (datasetType === "qa") {
-                                                setInstruction(row.instruction)
-                                                setInput(row.input)
-                                                setOutput(row.output)
-                                                setSystem(row.system)
-                                            } else if (datasetType === "text") {
-                                                setText(row.text)
-                                            }
-                                        }}
-                                    >
-                                        <Box
-                                            width="40px"
-                                            m="0 auto"
-                                            p="5px"
-                                            display="flex"
-                                            justifyContent="center"
-                                            borderRadius="4px"
-                                            style={{
-                                                border: '1px solid #e5e7eb',
-                                                borderWidth: '1px',
-                                                borderColor: '#e5e7eb',
-                                            }}
-                                        >
-                                            <BorderColorIcon/>
-                                            {/*<OpenInBrowserOutlinedIcon/>*/}
-                                        </Box>
-                                    </button>
-                                    <button
-                                        title="删除"
-                                        style={{
-                                            borderWidth: '0px',
-                                            backgroundColor: 'transparent',
-                                            paddingLeft: '0px',
-                                            paddingRight: '10px',
-                                        }}
-                                        onClick={() => {
-                                            if (isCallingApi || isUpdatingModel) {
-                                                return
-                                            }
-                                            setIsCallingApi(true)
-                                            const closeUrl = ''
-                                            fetcher(closeUrl, {
-                                                method: 'DELETE',
-                                            })
-                                                .then((response) => {
-                                                    response.json()
-                                                })
-                                                .then(() => {
-                                                    setIsCallingApi(false)
-                                                })
-                                                .catch((error) => {
-                                                    console.error('Error:', error)
-                                                    setIsCallingApi(false)
-                                                })
-                                        }}
-                                    >
-                                        <Box
-                                            width="40px"
-                                            m="0 auto"
-                                            p="5px"
-                                            display="flex"
-                                            justifyContent="center"
-                                            borderRadius="4px"
-                                            style={{
-                                                border: '1px solid #e5e7eb',
-                                                borderWidth: '1px',
-                                                borderColor: '#e5e7eb',
-                                            }}
-                                        >
-                                            <DeleteOutlineOutlinedIcon/>
-                                        </Box>
-                                    </button>
-                                </Box></StyledTableCell>
-                            </StyledTableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-
-            <DataGrid
-                rows={detailData}
-                columns={detailColumns}
-                pagination={false} // 这将隐藏分页功能
-                //  rowCount={rowCount}
-                //   getRowId={(row) => row.instruction + new Date().getTime()}
-                autoHeight={true}
-                sx={dataGridStyle}
-                // paginationModel={paginationModel}
-                // paginationMode="server"
-                //  onPaginationModelChange={setPaginationModel}
-                // onPageChange={handlePageChange}
-                //  onPageSizeChange={handlePageSizeChange}
-                // onPageChange={(newPage) => {
-                //     setPage_num(newPage)
-                //     update(isCallingApi)
-                // }}
-                // onPageSizeChange={(newPageSize) => {
-                //     setPage_size(newPageSize)
-                //     update(isCallingApi)
-                // }}
-                slots={{
-                    noRowsOverlay: noRowsOverlay,
-                    noResultsOverlay: noResultsOverlay,
-                }}
-            />
+                    <DataGrid
+                        rows={detailData}
+                        columns={detailColumns}
+                        pagination={false} // 这将隐藏分页功能
+                      //  rowCount={rowCount}
+                     //   getRowId={(row) => row.instruction + new Date().getTime()}
+                        autoHeight={true}
+                        sx={dataGridStyle}
+                       // paginationModel={paginationModel}
+                       // paginationMode="server"
+                      //  onPaginationModelChange={setPaginationModel}
+                       // onPageChange={handlePageChange}
+                      //  onPageSizeChange={handlePageSizeChange}
+                        // onPageChange={(newPage) => {
+                        //     setPage_num(newPage)
+                        //     update(isCallingApi)
+                        // }}
+                        // onPageSizeChange={(newPageSize) => {
+                        //     setPage_size(newPageSize)
+                        //     update(isCallingApi)
+                        // }}
+                        slots={{
+                            noRowsOverlay: noRowsOverlay,
+                            noResultsOverlay: noResultsOverlay,
+                        }}
+                    />
 
             <TablePagination
-                component="div"
-                count={rowCount}
-                page={page_num}
-                onPageChange={handlePageChange}
-                rowsPerPage={page_size}
-                onRowsPerPageChange={handlePageSizeChange}
-            />
+      component="div"
+      count={rowCount}
+      page={page_num}
+      onPageChange={handlePageChange}
+      rowsPerPage={page_size}
+      onRowsPerPageChange={handlePageSizeChange}
+    />
 
             <Drawer
-                open={isShow || isEditShow}
+                open={isShow||isEditShow }
                 onClose={() => {
                     setIsShow(false)
                 }}
@@ -833,7 +679,7 @@ const DatasetDetail = () => {
                             width="100%"
                             mx="auto"
                         >
-                            {datasetType === "qa" && <Grid rowSpacing={0} columnSpacing={1}>
+                            {datasetType==="qa"&&<Grid rowSpacing={0} columnSpacing={1}>
                                 <Grid item xs={12}>
                                     <FormControl variant="outlined" margin="normal" fullWidth>
                                         <TextField
@@ -879,7 +725,7 @@ const DatasetDetail = () => {
                                     </FormControl>
                                 </Grid>
                             </Grid>}
-                            {datasetType === "text" && <Grid rowSpacing={0} columnSpacing={1}>
+                            {datasetType==="text"&&<Grid rowSpacing={0} columnSpacing={1}>
                                 <Grid item xs={12}>
                                     <FormControl variant="outlined" margin="normal" fullWidth>
                                         <TextField
@@ -936,35 +782,33 @@ const DatasetDetail = () => {
                             width="100%"
                             mx="auto"
                         >
-                            <Grid container rowSpacing={0} columnSpacing={1}>
+                            <Grid  container rowSpacing={0} columnSpacing={1}>
                                 <Grid item xs={12}>
                                     <FormControl variant="outlined" margin="normal" fullWidth>
-                                        <div style={{display: 'flex'}}>
-                                            <InputLabel id="fileType-label">文件类型</InputLabel>
-                                            <Select
-                                                labelId="fileType-label"
-                                                style={{flexGrow: 1}}
-                                                value={fileType}
-                                                onChange={(e) => setFileType(e.target.value)}
-                                                label="文件分类"
-                                            >
-                                                {fileTypeOptions.map((item) => {
-                                                    return (
-                                                        <MenuItem key={item.value} value={item.value}>
-                                                            {item.name}
-                                                        </MenuItem>
-                                                    )
-                                                })}
-                                            </Select>
-                                            <Button variant="outlined" className="addBtn" onClick={() => {
-                                                downloadTemplate()
-                                            }}>下载模版</Button>
+                                        <div style={{display:'flex'}}>
+                                        <InputLabel id="fileType-label">文件类型</InputLabel>
+                                        <Select
+                                            labelId="fileType-label"
+                                            style={{flexGrow: 1}}
+                                            value={fileType}
+                                            onChange={(e) => setFileType(e.target.value)}
+                                            label="文件分类"
+                                        >
+                                            {fileTypeOptions.map((item) => {
+                                                return (
+                                                    <MenuItem key={item.value} value={item.value}>
+                                                        {item.name}
+                                                    </MenuItem>
+                                                )
+                                            })}
+                                        </Select>
+                                         <Button variant="outlined" className="addBtn"  onClick={()=>{downloadTemplate()}}>下载模版</Button>
                                         </div>
                                     </FormControl>
                                 </Grid>
                                 <Grid item xs={12}>
                                     <FormControl variant="outlined" margin="normal" fullWidth>
-                                        <TextField type="file" onChange={(e) => {
+                                       <TextField type="file"   onChange={(e) => {
                                             setUpload_file(e.target.files[0])
                                         }} required/>
                                     </FormControl>

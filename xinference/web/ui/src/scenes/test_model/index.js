@@ -73,12 +73,12 @@ const TestModel = () => {
       <TabContext value={value}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <TabList value={value} onChange={handleTabChange} aria-label="tabs">
-            <Tab label="Language Models" value="/test_model/llm" />
-            <Tab label="Embedding Models" value="/test_model/embedding" />
-            <Tab label="Rerank Models" value="/test_model/rerank" />
-            <Tab label="Image Models" value="/test_model/image" />
-            <Tab label="Audio Models" value="/test_model/audio" />
-            <Tab label="Custom Models" value="/test_model/custom/llm" />
+            <Tab label="语言模型" value="/test_model/llm" />
+            {/*<Tab label="嵌入模型" value="/test_model/embedding" />*/}
+            {/*<Tab label="重排模型" value="/test_model/rerank" />*/}
+            {/*<Tab label="图像模型" value="/test_model/image" />*/}
+            {/*<Tab label="音频模型" value="/test_model/audio" />*/}
+            {/*<Tab label="自定义模型" value="/test_model/custom/llm" />*/}
           </TabList>
         </Box>
         <TabPanel value="/test_model/llm" sx={{ padding: 0 }}>

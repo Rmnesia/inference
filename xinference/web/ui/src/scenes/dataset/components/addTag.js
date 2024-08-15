@@ -87,8 +87,8 @@ const AddTag = ({ customData, onGetArr, onJudgeArr }) => {
                   <TextField
                     label={item}
                     value={item}
-                    onChange={() => {
-                      updateArr(index, item)
+                    onChange={(e) => {
+                      updateArr(index,item, e.target.value)
                     }}
                     style={{ width: '88%' }}
                   />

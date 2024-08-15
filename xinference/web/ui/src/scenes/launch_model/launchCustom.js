@@ -98,14 +98,14 @@ const LaunchCustom = ({ gpuAvailable }) => {
       <TabContext value={value}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <TabList value={value} onChange={handleTabChange} aria-label="tabs">
-            <Tab label="Language Models" value="/launch_model/custom/llm" />
+            <Tab label="语言模型" value="/launch_model/custom/llm" />
             <Tab
-              label="Embedding Models"
+              label="嵌入模型"
               value="/launch_model/custom/embedding"
             />
-            <Tab label="Rerank Models" value="/launch_model/custom/rerank" />
-            <Tab label="Image Models" value="/launch_model/custom/image" />
-            <Tab label="Audio Models" value="/launch_model/custom/audio" />
+            <Tab label="重排模型" value="/launch_model/custom/rerank" />
+            <Tab label="图像模型" value="/launch_model/custom/image" />
+            <Tab label="音频模型" value="/launch_model/custom/audio" />
           </TabList>
         </Box>
         {customType.map((item) => (
@@ -125,7 +125,7 @@ const LaunchCustom = ({ gpuAvailable }) => {
                 <HotkeyFocusTextField
                   id="search"
                   type="search"
-                  label="Search for custom model name"
+                  label="根据模型名称进行检索"
                   value={searchTerm}
                   onChange={handleSearchChange}
                   size="small"

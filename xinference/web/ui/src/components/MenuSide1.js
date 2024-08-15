@@ -1,9 +1,7 @@
 import {
     // SourceSharp,
-   // AddBoxOutlined,
- //   ChevronRightOutlined,
-    Settings,
-    BorderColor,
+    AddBoxOutlined,
+    ChevronRightOutlined,
     DnsOutlined,
     RocketLaunchOutlined,
     SmartToyOutlined,
@@ -50,7 +48,7 @@ const navItems = [
     {
         text: '模型注册',
         url:'register_model',
-        icon: <BorderColor/>,
+        icon: <AddBoxOutlined/>,
     },
     {
         text: '集群信息',
@@ -60,7 +58,7 @@ const navItems = [
     {
         text: '配置信息',
         url:'config_info',
-        icon: <Settings/>,
+        icon: <DnsOutlined/>,
     }
 ]
 
@@ -69,11 +67,12 @@ const MenuSide = () => {
     const {pathname} = useLocation()
     const [active, setActive] = useState('')
     const navigate = useNavigate()
-    const [drawerWidth, setDrawerWidth] =useState('200px')// useState(`${Math.min(Math.max(window.innerWidth * 0.2, 287), 320)}px`)
+    const [drawerWidth, setDrawerWidth] = useState(
+        `${Math.min(Math.max(window.innerWidth * 0.2, 287), 320)}px`
+    )
     const StyledListItemButton = styled(ListItemButton)(({theme}) => ({
         '&.Mui-selected': {
             backgroundColor: theme.palette.action.selected,
-            color:'rgb(64, 158, 255)'
             // 可以在这里添加更多的选中样式
         },
     }));
@@ -82,8 +81,8 @@ const MenuSide = () => {
     }, [pathname])
 
     useEffect(() => {
-      //  const screenWidth = window.innerWidth
-        const maxDrawerWidth = '200'//Math.min(Math.max(screenWidth * 0.2, 287), 320)
+        const screenWidth = window.innerWidth
+        const maxDrawerWidth = Math.min(Math.max(screenWidth * 0.2, 287), 320)
         setDrawerWidth(`${maxDrawerWidth}px`)
 
         // Update the drawer width on window resize
@@ -112,10 +111,7 @@ const MenuSide = () => {
                 [`& .MuiDrawer-paper`]: {
                     width: drawerWidth,
                     boxSizing: 'border-box',
-                    background:'rgb(48, 65, 86)',
-                    color:'rgb(191, 203, 217)'
                 },
-
             }}
         >
             {/* Title */}
@@ -125,7 +121,7 @@ const MenuSide = () => {
                 alignItems="center"
                 width="100%"
             >
-                <Box display="flex" m="2rem 1rem 0rem 1rem" width="200px">
+                <Box display="flex" m="2rem 1rem 0rem 1rem" width="217px">
                     <Box
                         display="flex"
                         justifyContent="space-between"
@@ -136,13 +132,13 @@ const MenuSide = () => {
                             component="img"
                             alt="profile"
                             src={icon}
-                            height="50px"
-                            width="50px"
+                            height="60px"
+                            width="60px"
                             // borderRadius="50%"
                             sx={{objectFit: 'cover', mr: 1.5}}
                         />
                         <Box textAlign="left">
-                            <Typography fontWeight="bold" fontSize="1.5rem">
+                            <Typography fontWeight="bold" fontSize="1.7rem">
                                 {'部训管推'}
                             </Typography>
                         </Box>
@@ -152,7 +148,7 @@ const MenuSide = () => {
 
             <Box>
                 <Box width="100%">
-                    {/*<Box m="1.5rem 2rem 2rem 3rem"></Box>*/}
+                    <Box m="1.5rem 2rem 2rem 3rem"></Box>
                     <List>
                         {navItems.map(({text, icon,url}) => {
                             if (!icon) {
@@ -187,14 +183,13 @@ const MenuSide = () => {
                                     >
                                         <ListItemIcon
                                             sx={{
-                                                color:active.indexOf(url)>=0?'rgb(64, 158, 255)':'rgb(191, 203, 217)',
-                                                minWidth:'30px'
+                                                ml: '2rem',
                                             }}
                                         >
                                             {icon}
                                         </ListItemIcon>
                                         <ListItemText primary={text}/>
-                                        {/*<ChevronRightOutlined sx={{ml: 'auto'}}/>*/}
+                                        <ChevronRightOutlined sx={{ml: 'auto'}}/>
                                     </StyledListItemButton>
                                 </ListItem>
                             )

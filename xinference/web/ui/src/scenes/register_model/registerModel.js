@@ -385,7 +385,7 @@ const RegisterModelComponent = ({ modelType, customData }) => {
   return (
     <Box style={{ display: 'flex', overFlow: 'hidden', maxWidth: '100%' }}>
       <div className="show-json">
-        <p>Show custom json config used by api</p>
+        <p>显示 api 使用的自定义 json 配置</p>
         {isShow ? (
           <Tooltip title="Pack up" placement="top">
             <KeyboardDoubleArrowRightIcon
@@ -409,11 +409,11 @@ const RegisterModelComponent = ({ modelType, customData }) => {
           {customData.model_name && (
             <>
               <TextField
-                label="Model Name"
+                label="模型名称"
                 error={formData.model_name ? false : true}
                 value={formData.model_name}
                 size="small"
-                helperText="Alphanumeric characters with properly placed hyphens and underscores. Must not match any built-in model names."
+                helperText="字母数字字符，带有正确放置的连字符和下划线。不得与任何内置型号名称匹配。"
                 onChange={(event) =>
                   setFormData({ ...formData, model_name: event.target.value })
                 }
@@ -426,7 +426,7 @@ const RegisterModelComponent = ({ modelType, customData }) => {
           {customData.model_description && (
             <>
               <TextField
-                label="Model Description (Optional)"
+                label="模型描述 (可选)"
                 value={formData.model_description}
                 size="small"
                 onChange={(event) =>
@@ -445,7 +445,7 @@ const RegisterModelComponent = ({ modelType, customData }) => {
             <>
               <TextField
                 error={Number(formData.context_length) > 0 ? false : true}
-                label="Context Length"
+                label="上下文长度"
                 value={formData.context_length}
                 size="small"
                 onChange={(event) => {
@@ -536,7 +536,7 @@ const RegisterModelComponent = ({ modelType, customData }) => {
                       : 'inherit',
                 }}
               >
-                Model Languages
+                模型语言
               </label>
               <Box sx={styles.checkboxWrapper}>
                 {SUPPORTED_LANGUAGES.map((lang) => (
@@ -561,7 +561,7 @@ const RegisterModelComponent = ({ modelType, customData }) => {
                   </Box>
                 ))}
                 <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
-                  <InputLabel>Languages</InputLabel>
+                  <InputLabel>语言</InputLabel>
                   <Select
                     value={''}
                     label="Languages"
@@ -629,7 +629,7 @@ const RegisterModelComponent = ({ modelType, customData }) => {
                     formData.model_ability.length == 0 ? '#d32f2f' : 'inherit',
                 }}
               >
-                Model Abilities
+                模型能力
               </label>
               <Box sx={styles.checkboxWrapper}>
                 {SUPPORTED_FEATURES.map((ability) => (
@@ -665,24 +665,22 @@ const RegisterModelComponent = ({ modelType, customData }) => {
                   color: 'inherit',
                 }}
               >
-                Model Family
+                模型家族
               </label>
               {modelType === 'LLM' && formData.model_family && (
                 <Alert
                   icon={<CheckIcon fontSize="inherit" />}
                   severity="success"
                 >
-                  Please be careful to select the family name corresponding to
-                  the model you want to register. If not found, please choose
-                  <i style={{ fontStyle: 'italic', fontWeight: 700 }}> other</i>
+                  请谨慎选择您要注册的型号对应的系列名称。如果没有找到，请选择
+                  <i style={{ fontStyle: 'italic', fontWeight: 700 }}> 其他</i>
                   .
                 </Alert>
               )}
               {modelType === 'LLM' && !formData.model_family && (
                 <Alert severity="error">
-                  Please be careful to select the family name corresponding to
-                  the model you want to register. If not found, please choose
-                  <i style={{ fontStyle: 'italic', fontWeight: 700 }}> other</i>
+                  请谨慎选择您要注册的型号对应的系列名称。如果没有找到，请选择
+                  <i style={{ fontStyle: 'italic', fontWeight: 700 }}> 其他</i>
                   .
                 </Alert>
               )}
@@ -748,7 +746,7 @@ const RegisterModelComponent = ({ modelType, customData }) => {
             type="submit"
             onClick={handleClick}
           >
-            Register Model
+            注册模型
           </Button>
         </Box>
       </div>

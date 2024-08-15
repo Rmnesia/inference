@@ -45,7 +45,7 @@ const ClusterInfo = () => {
             }}
           >
             <TableTitle>Workers</TableTitle>
-            <NodeInfo nodeRole="Worker" endpoint={endPoint} />
+            <NodeInfo nodeRole="Workers" endpoint={endPoint} />
           </Paper>
         </Grid>
         <Grid item xs={12}>

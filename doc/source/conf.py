@@ -17,7 +17,7 @@ import os
 
 # -- Project information -----------------------------------------------------
 
-project = '海鲲矩阵'
+project = '部训管推'
 copyright = '2024, 714 Inc.'
 author = '714'
 
@@ -60,7 +60,7 @@ gettext_compact = False  # optional
 # a list of builtin themes.
 #
 html_theme = 'pydata_sphinx_theme'
-html_title = "Xinference"
+html_title = "部训管推平台"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
