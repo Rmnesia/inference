@@ -2,6 +2,7 @@ import { Navigate, useRoutes } from 'react-router-dom'
 
 import Layout from '../scenes/_layout'
 import ClusterInfo from '../scenes/cluster_info'
+import ConfigInfo from '../scenes/config_info'
 import LaunchModel from '../scenes/launch_model'
 import Datasets from '../scenes/dataset'
 import DatasetDetail from '../scenes/dataset/detail'
@@ -10,6 +11,7 @@ import RegisterModel from '../scenes/register_model'
 import RunningModels from '../scenes/running_models'
 import TrainModel from '../scenes/train_model'
 import TrainDetail from '../scenes/train_model/detail'
+import TrainResult from '../scenes/train_model/trainResult'
 import TestModel from '../scenes/test_model'
 import TestDetail from "../scenes/test_model/detail";
 
@@ -46,9 +48,13 @@ const routes = [
         path: 'train_model/:Modeltype',
         element: <TrainModel />,
       },
-        {
+      {
         path: 'train_model/detail/:id',
         element: <TrainDetail />,
+      },
+      {
+        path: 'train_model/trainResult/:name',
+        element: <TrainResult />,
       },
       {
         path: 'test_model/:Modeltype',
@@ -62,6 +68,10 @@ const routes = [
         path: 'cluster_info',
         element: <ClusterInfo />,
       },
+        {
+        path: 'config_info/:Configtype',
+        element: <ConfigInfo />,
+      },
     ],
   },
   {
@@ -70,7 +80,7 @@ const routes = [
   },
   {
     path: '*',
-    element: <Navigate to="launch_model/llm" replace />,
+    element: <Navigate to="dataset" replace />,
   },
 ]
 const WraperRoutes = () => {

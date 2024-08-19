@@ -183,7 +183,7 @@ const AddModelSpecs = ({ formData, onGetArr, scrollRef }) => {
   return (
     <>
       <div>
-        <label style={{ marginBottom: '20px' }}>Model Specs</label>
+        <label style={{ marginBottom: '20px' }}>型号规格</label>
         <Button
           variant="contained"
           size="small"
@@ -191,7 +191,7 @@ const AddModelSpecs = ({ formData, onGetArr, scrollRef }) => {
           className="addBtn"
           onClick={handleAddSpecs}
         >
-          more
+          更多
         </Button>
       </div>
       <div className="specs_container">
@@ -202,7 +202,7 @@ const AddModelSpecs = ({ formData, onGetArr, scrollRef }) => {
                 paddingLeft: 5,
               }}
             >
-              Model Format
+              模型格式
             </label>
             <RadioGroup
               value={item.model_format}
@@ -233,19 +233,19 @@ const AddModelSpecs = ({ formData, onGetArr, scrollRef }) => {
             <TextField
               error={item.model_uri !== '' ? false : true}
               style={{ minWidth: '60%' }}
-              label="Model Path"
+              label="模型路径"
               size="small"
               value={path}
               onChange={(e) => {
                 handleUpdateSpecsArr(index, 'model_uri', e.target.value)
               }}
-              helperText="For PyTorch, provide the model directory. For GGML/GGUF, provide the model file path."
+              helperText="对于 PyTorch，提供模型目录。对于 GGML/GGUF，提供模型文件路径。"
             />
             <Box padding="15px"></Box>
 
             <TextField
               error={Number(item.model_size_in_billions) > 0 ? false : true}
-              label="Model Size in Billions"
+              label="模型规模（以十亿计）"
               size="small"
               value={item.model_size_in_billions}
               onChange={(e) => {
@@ -280,7 +280,7 @@ const AddModelSpecs = ({ formData, onGetArr, scrollRef }) => {
                   }}
                   helperText={
                     item.model_format === 'gptq' || item.model_format === 'awq'
-                      ? 'For GPTQ/AWQ models, please be careful to fill in the quantization corresponding to the model you want to register.'
+                      ? '对于GPTQ/AWQ模型，请谨慎填写与您要注册的模型对应的量化。'
                       : ''
                   }
                 />

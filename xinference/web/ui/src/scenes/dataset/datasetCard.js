@@ -9,9 +9,9 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoreHorizSharpIcon from '@mui/icons-material/MoreHorizSharp';
 import {
-    Box,
+    Box, Button,
     Chip,
-    CircularProgress,
+    CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
     Drawer,
     FormControl,
     Grid,
@@ -47,6 +47,8 @@ const DatasetCard = ({
     const {setSuccessMsg} = useContext(ApiContext)
     const [cookie] = useCookies(['token'])
     const navigate = useNavigate()
+        //是否显示Confirm框
+    const [isShowConfirm,setIsShowConfirm]=useState(false);
     //数据集类型
     const [datasetType, setDatasetType] = useState(datasetData.dataset_type)
     //数据集类型选项
@@ -115,7 +117,10 @@ const DatasetCard = ({
         e.stopPropagation()
         navigate(`/dataset/detail/${datasetData.dataset_name}/${datasetData.dataset_type}`)
     }
-
+    const handeCustomDeleteOpen=(e)=>{
+         e.stopPropagation()
+        setIsShowConfirm(true)
+    }
     //删除数据集
     const handeCustomDelete = (e) => {
         e.stopPropagation()
@@ -154,13 +159,19 @@ const DatasetCard = ({
                     } else {
                         callParentMethod();
                         setSuccessMsg("删除成功")
+
                     }
                 })
         } catch (error) {
             console.error('Error:', error)
         } finally {
             setIsCallingApi(false)
+            setIsShowConfirm(false)
         }
+    }
+    const handleClose=(e)=>{
+         e.stopPropagation()
+        setIsShowConfirm(false)
     }
 
     //判断是否重复添加标签
@@ -176,6 +187,8 @@ const DatasetCard = ({
     const getCustomParametersArr = (arr) => {
         setCustomParametersArr(arr)
     }
+
+
 
     // Set two different states based on mouse hover
     return (
@@ -201,7 +214,7 @@ const DatasetCard = ({
                     </IconButton>
                      <IconButton
                         aria-label="delete"
-                        onClick={handeCustomDelete}
+                        onClick={handeCustomDeleteOpen}
                     >
                         <DeleteIcon/>
                     </IconButton>
@@ -396,6 +409,20 @@ const DatasetCard = ({
                     </Box>
                 </div>
             </Drawer>
+            <Dialog open={isShowConfirm} onClose={handleClose} aria-labelledby="alert-dialog-title" aria-describedby="alert-dialog-description">
+        <DialogTitle id="alert-dialog-title">{"删除确认"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            确认要删除该数据项？
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>取消</Button>
+          <Button onClick={handeCustomDelete} autoFocus>
+            确认
+          </Button>
+        </DialogActions>
+      </Dialog>
             <Snackbar
                 anchorOrigin={{vertical: 'top', horizontal: 'center'}}
                 open={openSnackbar}

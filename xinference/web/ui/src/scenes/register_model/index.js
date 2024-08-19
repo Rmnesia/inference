@@ -36,11 +36,11 @@ const RegisterModel = () => {
             }}
             aria-label="tabs"
           >
-            <Tab label="Language Model" value="/register_model/llm" />
-            <Tab label="Embedding Model" value="/register_model/embedding" />
-            <Tab label="Rerank Model" value="/register_model/rerank" />
-            <Tab label="Image Model" value="/register_model/image" />
-            <Tab label="Audio Model" value="/register_model/audio" />
+            <Tab label="语言模型" value="/register_model/llm" />
+            {/*<Tab label="嵌入模型" value="/register_model/embedding" />*/}
+            {/*<Tab label="重排模型" value="/register_model/rerank" />*/}
+            {/*<Tab label="图像模型" value="/register_model/image" />*/}
+            {/*<Tab label="音频模型" value="/register_model/audio" />*/}
           </TabList>
         </Box>
         <TabPanel value="/register_model/llm" sx={{ padding: 0 }}>
@@ -49,7 +49,7 @@ const RegisterModel = () => {
             customData={{
               version: 1,
               model_name: 'custom-llm',
-              model_description: 'This is a custom model description.',
+              model_description: '模型描述',
               context_length: 2048,
               model_lang: ['en'],
               model_ability: ['generate'],

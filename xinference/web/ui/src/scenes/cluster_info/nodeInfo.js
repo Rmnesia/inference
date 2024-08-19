@@ -88,7 +88,7 @@ class NodeInfo extends React.Component {
 
       const row_count = (
         <StyledTableRow>
-          <StyledTableCell>Count</StyledTableCell>
+          <StyledTableCell>计数</StyledTableCell>
           <StyledTableCell>
             <Grid container>
               <Grid>{roleData.length}</Grid>
@@ -99,11 +99,11 @@ class NodeInfo extends React.Component {
 
       const CPU_row = (
         <StyledTableRow>
-          <StyledTableCell>CPU Info</StyledTableCell>
+          <StyledTableCell>CPU 信息</StyledTableCell>
           <StyledTableCell>
             <Grid container>
-              <Grid xs={4}>Usage: {resourceStats.cpu_used.toFixed(2)}</Grid>
-              <Grid xs={8}>Total: {resourceStats.cpu_total.toFixed(2)}</Grid>
+              <Grid xs={4}>使用: {resourceStats.cpu_used.toFixed(2)}</Grid>
+              <Grid xs={8}>总计: {resourceStats.cpu_total.toFixed(2)}</Grid>
             </Grid>
           </StyledTableCell>
         </StyledTableRow>
@@ -111,14 +111,14 @@ class NodeInfo extends React.Component {
 
       const CPU_Memory_Info_row = (
         <StyledTableRow>
-          <StyledTableCell>CPU Memory Info</StyledTableCell>
+          <StyledTableCell>CPU 内存信息</StyledTableCell>
           <StyledTableCell>
             <Grid container>
               <Grid xs={4}>
-                Usage: {toReadableSize(resourceStats.memory_used)}
+                使用: {toReadableSize(resourceStats.memory_used)}
               </Grid>
               <Grid xs={8}>
-                Total: {toReadableSize(resourceStats.memory_total)}
+                总计: {toReadableSize(resourceStats.memory_total)}
               </Grid>
             </Grid>
           </StyledTableCell>
@@ -127,7 +127,7 @@ class NodeInfo extends React.Component {
 
       const version_row = (
         <StyledTableRow>
-          <StyledTableCell>Version</StyledTableCell>
+          <StyledTableCell>版本</StyledTableCell>
           <StyledTableCell>
             <Grid container>
               <Grid xs={4}>Release: {this.state.version.release}</Grid>
@@ -147,10 +147,10 @@ class NodeInfo extends React.Component {
 
         const GPU_row = (
           <StyledTableRow>
-            <StyledTableCell>GPU Info</StyledTableCell>
+            <StyledTableCell>GPU 信息</StyledTableCell>
             <StyledTableCell>
               <Grid container>
-                <Grid xs={12}>Total: {resourceStats.gpu_total.toFixed(2)}</Grid>
+                <Grid xs={12}>总计: {resourceStats.gpu_total.toFixed(2)}</Grid>
               </Grid>
             </StyledTableCell>
           </StyledTableRow>
@@ -158,14 +158,14 @@ class NodeInfo extends React.Component {
 
         const GPU_Memory_Info_row = (
           <StyledTableRow>
-            <StyledTableCell>GPU Memory Info</StyledTableCell>
+            <StyledTableCell>GPU 内存信息</StyledTableCell>
             <StyledTableCell>
               <Grid container>
                 <Grid xs={4}>
-                  Usage: {toReadableSize(resourceStats.gpu_memory_used)}
+                  使用: {toReadableSize(resourceStats.gpu_memory_used)}
                 </Grid>
                 <Grid xs={8}>
-                  Total: {toReadableSize(resourceStats.gpu_memory_total)}
+                  总计: {toReadableSize(resourceStats.gpu_memory_total)}
                 </Grid>
               </Grid>
             </StyledTableCell>
@@ -185,7 +185,7 @@ class NodeInfo extends React.Component {
       if (this.nodeRole === 'Supervisor') {
         const supervisor_addr_row = (
           <StyledTableRow>
-            <StyledTableCell>Address</StyledTableCell>
+            <StyledTableCell>地址</StyledTableCell>
             <StyledTableCell>
               <Grid container>
                 <Grid>{roleData[0] ? roleData[0]['ip_address'] : '-'}</Grid>
@@ -223,31 +223,31 @@ class NodeInfo extends React.Component {
           <TableHead>
             <TableRow>
               <StyledTableCell style={{ fontWeight: 'bolder' }}>
-                Node Type
+                节点类型
               </StyledTableCell>
               <StyledTableCell style={{ fontWeight: 'bolder' }}>
-                Address
+                地址
               </StyledTableCell>
               <StyledTableCell style={{ fontWeight: 'bolder' }}>
-                CPU Usage
+                CPU 使用
               </StyledTableCell>
               <StyledTableCell style={{ fontWeight: 'bolder' }}>
-                CPU Total
+                CPU 总计
               </StyledTableCell>
               <StyledTableCell style={{ fontWeight: 'bolder' }}>
-                Mem Usage
+                内存使用
               </StyledTableCell>
               <StyledTableCell style={{ fontWeight: 'bolder' }}>
-                Mem Total
+                内存总计
               </StyledTableCell>
               <StyledTableCell style={{ fontWeight: 'bolder' }}>
-                GPU Count
+                GPU 计数
               </StyledTableCell>
               <StyledTableCell style={{ fontWeight: 'bolder' }}>
-                GPU Mem Usage
+                GPU 内存使用
               </StyledTableCell>
               <StyledTableCell style={{ fontWeight: 'bolder' }}>
-                GPU Mem Total
+                GPU 内存总计
               </StyledTableCell>
             </TableRow>
           </TableHead>

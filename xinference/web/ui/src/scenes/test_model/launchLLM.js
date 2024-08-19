@@ -114,7 +114,7 @@ const LaunchLLM = ({ gpuAvailable }) => {
           <Select
             id="ability"
             labelId="ability-select-label"
-            label="Model Ability"
+            label="模型能力"
             onChange={handleAbilityChange}
             value={modelAbility}
             size="small"
@@ -130,7 +130,7 @@ const LaunchLLM = ({ gpuAvailable }) => {
           <HotkeyFocusTextField
             id="search"
             type="search"
-            label="Search for model name and description"
+            label="根据模型名称或描述进行检索"
             value={searchTerm}
             onChange={handleChange}
             size="small"
