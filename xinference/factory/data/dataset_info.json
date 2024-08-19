@@ -39,30 +39,6 @@
       "history": "history"
     }
   },
-  "glaive_toolcall": {
-    "file_name": "glaive_toolcall_10k.json",
-    "dataset_num": 10000,
-    "formatting": "sharegpt",
-    "columns": {
-      "messages": "conversations",
-      "tools": "tools"
-    }
-  },
-  "mllm_demo": {
-    "file_name": "mllm_demo.json",
-    "dataset_num": 6,
-    "formatting": "sharegpt",
-    "columns": {
-      "messages": "messages",
-      "images": "images"
-    },
-    "tags": {
-      "role_tag": "role",
-      "content_tag": "content",
-      "user_tag": "user",
-      "assistant_tag": "assistant"
-    }
-  },
   "oaast_rm_zh": {
     "file_name": "oaast_rm_zh.json",
     "dataset_num": 775,

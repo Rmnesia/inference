@@ -28,4 +28,4 @@ class TrainRequest(BaseModel):
     lora_rank: str = '8'
     lora_alpha: str = '16'
     lora_dropout: str = '0'
-    lora_target: str = "qkv_proj"
+    lora_target: str = "all"
