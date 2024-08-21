@@ -29,6 +29,7 @@ import select
 import threading
 from typing import Any, Dict, List, Optional, Union
 
+import shutil
 import gradio as gr
 import xoscar as xo
 from aioprometheus import REGISTRY, MetricsMiddleware
@@ -584,7 +585,17 @@ class RESTfulAPI:
                 if self.is_authenticated()
                 else None
             ),
-        )
+        ),
+        self._router.add_api_route(
+            "/v1/models/list_local_models",
+            self.list_local_models,
+            methods=["GET"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        ),
         self._router.add_api_route(
             "/v1/runner/training",
             self.training,
@@ -598,6 +609,16 @@ class RESTfulAPI:
         self._router.add_api_route(
             "/v1/runner/advanced_training",
             self.advanced_training,
+            methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        ),
+        self._router.add_api_route(
+            "/v1/runner/evaluating",
+            self.evaluating,
             methods=["POST"],
             dependencies=(
                 [Security(self._auth_service, scopes=["models:list"])]
@@ -1838,6 +1859,29 @@ class RESTfulAPI:
             logger.error(e)
             raise HTTPException(status_code=500, detail="Internal Server Error.")
 
+    async def list_local_models(self) -> JSONResponse:
+        try:
+            directory = 'models/'
+            data_list = await (await self._get_supervisor_ref()).list_model_registrations(
+                "LLM", detailed=True
+            )
+            # model_list = []
+            # for data in data_list:
+            #     for model in os.listdir(directory):
+            #         if model == data['model_name']:
+            #             model_list.append(data)
+            # response = {"object": "list", "data": model_list}
+            return JSONResponse(content=data_list)
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="Data file not found.")
+        except ValueError as ve:
+            logger.error(ve)
+            raise HTTPException(status_code=400, detail="Invalid data format.")
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
+
     async def training(self, request: Request) -> StreamingResponse:
         # 从请求体中获取参数
         params = await request.json()
@@ -1847,7 +1891,7 @@ class RESTfulAPI:
         output_dir = f"saves/{basename}/lora/train_{create_time}"
 
         # 设置环境变量
-        os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+        os.environ['CUDA_VISIBLE_DEVICES'] = params['CUDA_VISIBLE_DEVICES']
         os.environ['NCCL_P2P_DISABLE'] = '1'
         os.environ['NCCL_IB_DISABLE'] = '1'
         # 构建命令行参数
@@ -1885,6 +1929,18 @@ class RESTfulAPI:
             '--lora_target', train_request.lora_target
         ]
 
+        def copy_config_files(source_folder, destination_folder):
+            # 遍历源文件夹中的所有文件和文件夹
+            for filename in os.listdir(source_folder):
+                # 检查文件名是否符合条件
+                if filename == "config.json" or "configuration" in filename:
+                    # 构建完整的文件路径
+                    source_file_path = os.path.join(source_folder, filename)
+                    destination_file_path = os.path.join(destination_folder, filename)
+                    # 拷贝文件到指定文件夹
+                    shutil.copy(source_file_path, destination_file_path)
+                    print(f"文件 '{filename}' 已成功拷贝到 '{destination_folder}'")
+
         # 尝试执行命令行训练过程
         async def stream_output():
             try:
@@ -1919,6 +1975,7 @@ class RESTfulAPI:
                         break
                 exit_code = await process.wait()
                 print("训练执行完毕，退出码：", exit_code)
+                copy_config_files(train_request.model_name_or_path, output_dir)
                 if exit_code != 0:
                     raise HTTPException(status_code=500, detail="训练过程中发生错误。")
 
@@ -1953,11 +2010,14 @@ class RESTfulAPI:
         params = await request.json()
         create_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
         basename = os.path.basename(params['model_name_or_path'])
-        output_dir = f"saves/{basename}/lora/train_{create_time}"
+        finetuning_type = params['finetuning_type']
+        output_dir = f"saves/{basename}/{finetuning_type}/train_{create_time}"
 
         def dict_to_command_list(dictionary, output_dir, prefix='--'):
             command_list = ['llamafactory-cli', 'train']
             for key, value in dictionary.items():
+                if key == "CUDA_VISIBLE_DEVICES":
+                    continue
                 command_list.append(prefix + key)
                 command_list.append(str(value))
             command_list.append('--output_dir')
@@ -1967,7 +2027,104 @@ class RESTfulAPI:
         command = dict_to_command_list(params, output_dir)
 
         # 设置环境变量
-        os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+        os.environ['CUDA_VISIBLE_DEVICES'] = params['CUDA_VISIBLE_DEVICES']
+        os.environ['NCCL_P2P_DISABLE'] = '1'
+        os.environ['NCCL_IB_DISABLE'] = '1'
+
+        def copy_config_files(source_folder, destination_folder):
+            # 遍历源文件夹中的所有文件和文件夹
+            for filename in os.listdir(source_folder):
+                # 检查文件名是否符合条件
+                if filename == "config.json" or "configuration" in filename:
+                    # 构建完整的文件路径
+                    source_file_path = os.path.join(source_folder, filename)
+                    destination_file_path = os.path.join(destination_folder, filename)
+                    # 拷贝文件到指定文件夹
+                    shutil.copy(source_file_path, destination_file_path)
+                    print(f"文件 '{filename}' 已成功拷贝到 '{destination_folder}'")
+
+        # 尝试执行命令行训练过程
+        async def stream_output():
+            try:
+                global process
+                # 启动进程
+                process = await asyncio.create_subprocess_exec(
+                    *command,
+                    stdout=asyncio.subprocess.PIPE
+                )
+                discard = False
+                while True:
+                    try:
+                        output = await asyncio.wait_for(process.stdout.readline(), timeout=1.0)
+                        output = output.decode().strip()
+                        if output:
+                            if "'loss':" in output:
+                                yield f"GRAPH: {output}<END>"
+                            else:
+                                yield f"OUT: {output}<END>"
+                    except asyncio.TimeoutError:
+                        # 超时后检查进程是否结束
+                        if process.returncode is not None:
+                            break
+                    except asyncio.LimitOverrunError as e:
+                        print(f"Overrun detected, buffer length now={e.consumed}")
+                        chunk = await process.stdout.readexactly(e.consumed)
+                        if not discard:
+                            yield f"OUT:HUGE DATA {chunk}<END>"
+                        discard = True
+
+                    if process.returncode is not None:
+                        break
+                exit_code = await process.wait()
+                if params['finetuning_type'] == 'lora':
+                    copy_config_files(params['model_name_or_path'], output_dir)
+                print("训练执行完毕，退出码：", exit_code)
+                if exit_code != 0:
+                    raise HTTPException(status_code=500, detail="训练过程中发生错误。")
+
+            except subprocess.CalledProcessError as cpe:
+                logger.error(cpe.stderr)
+                raise HTTPException(status_code=500, detail="An error occurred during training.")
+
+            except asyncio.CancelledError:
+                # 如果有取消信号（如Ctrl-C），杀死子进程
+                process.terminate()
+                raise HTTPException(status_code=500, detail="训练过程被用户终止。")
+
+            except subprocess.CalledProcessError as cpe:
+                logger.error(cpe.stderr)
+                raise HTTPException(status_code=500, detail="An error occurred during training.")
+            except FileNotFoundError as fe:
+                logger.error(fe)
+                raise HTTPException(status_code=404, detail="Data file not found.")
+            except ValueError as ve:
+                logger.error(ve)
+                raise HTTPException(status_code=400, detail="输出显示出现错误")
+            except Exception as e:
+                logger.error(e)
+                raise HTTPException(status_code=500, detail="Internal Server Error.")
+            finally:
+                process.terminate()
+
+        return StreamingResponse(stream_output(), media_type="text/plain")
+
+    async def evaluating(self, request: Request) -> StreamingResponse:
+        # 从请求体中获取参数
+        params = await request.json()
+
+        def dict_to_command_list(dictionary, output_dir, prefix='--'):
+            command_list = ['llamafactory-cli', 'train']
+            for key, value in dictionary.items():
+                if key == "CUDA_VISIBLE_DEVICES":
+                    continue
+                command_list.append(prefix + key)
+                command_list.append(str(value))
+            return command_list
+
+        command = dict_to_command_list(params, output_dir)
+
+        # 设置环境变量
+        os.environ['CUDA_VISIBLE_DEVICES'] = params['CUDA_VISIBLE_DEVICES']
         os.environ['NCCL_P2P_DISABLE'] = '1'
         os.environ['NCCL_IB_DISABLE'] = '1'
 
@@ -2033,6 +2190,95 @@ class RESTfulAPI:
                 process.terminate()
 
         return StreamingResponse(stream_output(), media_type="text/plain")
+
+    async def export(self, request: Request) -> StreamingResponse:
+        # 从请求体中获取参数
+        params = await request.json()
+        create_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        basename = os.path.basename(params['model_name_or_path'])
+        export_dir = f"saves/{basename}/merge/train_{create_time}"
+
+        def dict_to_command_list(dictionary, export_dir, prefix='--'):
+            command_list = ['llamafactory-cli', 'export']
+            for key, value in dictionary.items():
+                if key == "CUDA_VISIBLE_DEVICES":
+                    continue
+                command_list.append(prefix + key)
+                command_list.append(str(value))
+            command_list.append('--export_dir')
+            command_list.append(export_dir)
+            return command_list
+
+        command = dict_to_command_list(params, export_dir)
+
+        # 设置环境变量
+        os.environ['CUDA_VISIBLE_DEVICES'] = params['CUDA_VISIBLE_DEVICES']
+        os.environ['NCCL_P2P_DISABLE'] = '1'
+        os.environ['NCCL_IB_DISABLE'] = '1'
+
+        # 尝试执行命令行训练过程
+        async def stream_output():
+            try:
+                global process
+                # 启动进程
+                process = await asyncio.create_subprocess_exec(
+                    *command,
+                    stdout=asyncio.subprocess.PIPE
+                )
+                discard = False
+                while True:
+                    try:
+                        output = await asyncio.wait_for(process.stdout.readline(), timeout=1.0)
+                        output = output.decode().strip()
+                        if output:
+                            if "'loss':" in output:
+                                yield f"GRAPH: {output}<END>"
+                            else:
+                                yield f"OUT: {output}<END>"
+                    except asyncio.TimeoutError:
+                        # 超时后检查进程是否结束
+                        if process.returncode is not None:
+                            break
+                    except asyncio.LimitOverrunError as e:
+                        print(f"Overrun detected, buffer length now={e.consumed}")
+                        chunk = await process.stdout.readexactly(e.consumed)
+                        if not discard:
+                            yield f"OUT:HUGE DATA {chunk}<END>"
+                        discard = True
+
+                    if process.returncode is not None:
+                        break
+                exit_code = await process.wait()
+                print("导出执行完毕，退出码：", exit_code)
+                if exit_code != 0:
+                    raise HTTPException(status_code=500, detail="导出过程中发生错误。")
+
+            except subprocess.CalledProcessError as cpe:
+                logger.error(cpe.stderr)
+                raise HTTPException(status_code=500, detail="An error occurred during exporting.")
+
+            except asyncio.CancelledError:
+                # 如果有取消信号（如Ctrl-C），杀死子进程
+                process.terminate()
+                raise HTTPException(status_code=500, detail="导出过程被用户终止。")
+
+            except subprocess.CalledProcessError as cpe:
+                logger.error(cpe.stderr)
+                raise HTTPException(status_code=500, detail="An error occurred during exporting.")
+            except FileNotFoundError as fe:
+                logger.error(fe)
+                raise HTTPException(status_code=404, detail="Data file not found.")
+            except ValueError as ve:
+                logger.error(ve)
+                raise HTTPException(status_code=400, detail="输出显示出现错误")
+            except Exception as e:
+                logger.error(e)
+                raise HTTPException(status_code=500, detail="Internal Server Error.")
+            finally:
+                process.terminate()
+
+        return StreamingResponse(stream_output(), media_type="text/plain")
+
 
     async def terminate(self) -> JSONResponse:
         try:
