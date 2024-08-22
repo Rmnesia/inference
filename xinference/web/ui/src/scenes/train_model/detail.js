@@ -16,12 +16,22 @@ import {
     AccordionDetails,
     FormLabel,
     RadioGroup,
-    FormControlLabel, Radio, ListItem, ListItemIcon, List, Slider, Input, FormHelperText
+    FormControlLabel,
+    Radio,
+    ListItem,
+    ListItemIcon,
+    List,
+    Slider,
+    Input,
+    FormHelperText,
+    Dialog,
+    DialogTitle,
+    DialogContent, DialogContentText, DialogActions
 } from '@mui/material'
 import React, {useContext, useEffect, useRef, useState} from 'react'
 import {useCookies} from 'react-cookie'
 import {useNavigate, useParams} from 'react-router-dom'
-import VisibilitySharpIcon from '@mui/icons-material/VisibilitySharp';
+//import VisibilitySharpIcon from '@mui/icons-material/VisibilitySharp';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -70,7 +80,7 @@ const TrainDetail = () => {
     //模型名称
     //const [modelName, setModelName] = useState(name);
     //模型路径
-    const [model_name_or_path, setModel_name_or_path] = useState('');
+    const [model_name_or_path, setModel_name_or_path] = useState('models/'+name);
     //训练轮数
     //const [trainingRound, setTrainingRound] = useState(3);
     //数据集集合
@@ -83,8 +93,11 @@ const TrainDetail = () => {
     //const [lang, setLang] = useState('')
     //模型名称
     //const [model_name, setModel_name] = useState('')
+    //显卡序号
+    const [cardNO, setCardNO] = useState('0')
+
     //模型路径
-    const [model_path, setModel_path] = useState('')
+    const [model_path, setModel_path] = useState('models/'+name)
     //微调方法类型
     const finetuningTypeOptions = [{name: 'full', value: 'full'}, {name: 'freeze', value: 'freeze'}, {
         name: 'lora',
@@ -480,9 +493,9 @@ const TrainDetail = () => {
     //Block 更新比例
     const [badam_update_ratio, setBadam_update_ratio] = useState('0.05')
     //输出目录
-    const [output_dir, setOutput_dir] = useState('')
+    //const [output_dir, setOutput_dir] = useState('')
     //配置路径
-    const [config_path, setConfig_path] = useState('')
+    //const [config_path, setConfig_path] = useState('')
 
     //新增数据是否显示抽屉
     const [isShow, setIsShow] = useState(false)
@@ -507,16 +520,38 @@ const TrainDetail = () => {
     const [returnHighContent, setReturnHighContent] = useState([])
     const listRef = useRef(null); // 创建一个ref来引用<ul>
     const listHighRef = useRef(null)
-
+    //是否显示Confirm框
+    const [isShowConfirm, setIsShowConfirm] = useState(false)
+    //确认类型：1 开始训练 2 中止训练 3 开始高级训练 4 中止高级训练
+    const [confirmType, setConfirmType] = useState(1)
     const {setSuccessMsg} = useContext(ApiContext)
+
+    //关闭确认
+    const handleClose = (e) => {
+        e.stopPropagation()
+        setIsShowConfirm(false)
+    }
+    const handleConfirm = (e) => {
+        e.stopPropagation()
+        setIsShowConfirm(false)
+        if (confirmType == 1) {
+            handleTrainModel()
+        } else if (confirmType == 2) {
+            handleStopTrain()
+        } else if (confirmType == 3) {
+            handleHighTrainModel()
+        } else if (confirmType == 4) {
+            handleHighStopTrain()
+        }
+    }
     //页签切换
     const handleTabChange = (event, newValue) => {
         setValue(newValue)
     }
     //预览数据集
-    const handleViewDataset = () => {
-        setIsShow(true)
-    }
+    // const handleViewDataset = () => {
+    //     setIsShow(true)
+    // }
     //模型训练
     const handleTrainModel = () => {
         if (isCallingApi || isUpdatingModel)
@@ -538,10 +573,10 @@ const TrainDetail = () => {
                         "model_name_or_path": model_name_or_path,
                         "template": template,
                         "dataset": dataset,
-                        "num_train_epochs": num_train_epochs
+                        "num_train_epochs": num_train_epochs,
+                        "CUDA_VISIBLE_DEVICES": cardNO//显卡序号,多张显卡用,分割拼接
                     })
             }).then((response) => {
-                console.log(response);
                 setLoading(false)
                 if (!response.ok) {
                     response
@@ -641,6 +676,7 @@ const TrainDetail = () => {
             // setDataset_dir('./xinference/factory/data/')//固定值
             const postData = {};
             postData.do_train = 'True'
+            postData.CUDA_VISIBLE_DEVICES = cardNO//显卡序号,多张显卡用,分割拼接
             postData.model_name_or_path = model_path//模型名称
             if (adapter_path)
                 postData.adapter_name_or_path = adapter_path//适配器路径
@@ -752,7 +788,6 @@ const TrainDetail = () => {
                 },
                 body: JSON.stringify(postData)
             }).then((response) => {
-                console.log(response);
                 setLoading(false)
                 if (!response.ok) {
                     response
@@ -765,11 +800,9 @@ const TrainDetail = () => {
                             )
                         )
                 } else {
-                    console.log(response);
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
-                    let content = '';
-                    console.log(content)
+                    // let content = '';
                     setReturnHighContent([])
                     const read = () => {
                         reader.read().then(({done, value}) => {
@@ -778,7 +811,6 @@ const TrainDetail = () => {
                                 //  setReturnContent(content);
                                 return reader.releaseLock();
                             }
-
                             // 将读取到的 Uint8Array 转换为字符串
                             const lineText = decoder.decode(value, {stream: true});
                             const tempArr = lineText.split('<END>').filter(function (cur) {
@@ -972,7 +1004,18 @@ const TrainDetail = () => {
                         {/*<Box sx={{height: '100%', width: '100%', flexGrow: 1}}>*/}
                         <Paper elevation={2} style={{padding: "20px"}}>
                             <Grid container spacing={1}>
-                                <Grid item xs={3}>
+                                <Grid item xs={2}>
+                                    <FormControl variant="outlined" margin="dense" fullWidth>
+                                        <TextField
+                                            label="显卡序号"
+                                            value={cardNO}
+                                            helperText="输入显卡序号，多张显卡,分割"
+                                            onChange={(e) => setCardNO(e.target.value)}
+                                            size="small"
+                                        />
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={2}>
                                     <FormControl variant="outlined" margin="dense" fullWidth>
                                         <InputLabel id="template-label">提示模板</InputLabel>
                                         <Select
@@ -1004,7 +1047,7 @@ const TrainDetail = () => {
                                         />
                                     </FormControl>
                                 </Grid>
-                                <Grid item xs={3}>
+                                <Grid item xs={2}>
                                     <FormControl variant="outlined" margin="dense" fullWidth>
                                         <TextField
                                             label="训练轮数"
@@ -1045,16 +1088,16 @@ const TrainDetail = () => {
                                                 })}
                                             </Select>
 
-                                            <Button
-                                                variant="contained"
-                                                sx={{display: 'none'}}
-                                                size="small"
-                                                endIcon={<VisibilitySharpIcon/>}
-                                                className="addBtn"
-                                                onClick={handleViewDataset}
-                                            >
-                                                预览数据集
-                                            </Button>
+                                            {/*<Button*/}
+                                            {/*    variant="contained"*/}
+                                            {/*    sx={{display: 'none'}}*/}
+                                            {/*    size="small"*/}
+                                            {/*    endIcon={<VisibilitySharpIcon/>}*/}
+                                            {/*    className="addBtn"*/}
+                                            {/*    onClick={handleViewDataset}*/}
+                                            {/*>*/}
+                                            {/*    预览数据集*/}
+                                            {/*</Button>*/}
                                             <LoadingButton
                                                 variant="contained"
                                                 size="small"
@@ -1062,17 +1105,23 @@ const TrainDetail = () => {
                                                 className="addBtn"
                                                 loading={loading}
                                                 loadingPosition="end"
-                                                onClick={handleTrainModel}
+                                                onClick={() => {
+                                                    setConfirmType(1);
+                                                    setIsShowConfirm(true);
+                                                }}
                                             >
                                                 模型训练
                                             </LoadingButton>
                                             <Button
-                                                enabled={isEnable}
+                                                disabled={!isEnable}
                                                 variant="contained"
                                                 size="small"
                                                 endIcon={<CancelIcon/>}
                                                 className="addBtn"
-                                                onClick={handleStopTrain}
+                                                onClick={() => {
+                                                    setConfirmType(2);
+                                                    setIsShowConfirm(true);
+                                                }}
                                             >
                                                 中止训练
                                             </Button>
@@ -1095,7 +1144,7 @@ const TrainDetail = () => {
                                                         data: yAxis,
                                                     },
                                                 ]}
-                                                width={500}
+                                                width={undefined}
                                                 height={320}
                                             />
                                         </Paper>
@@ -1152,7 +1201,17 @@ const TrainDetail = () => {
                                 {/*        />*/}
                                 {/*    </FormControl>*/}
                                 {/*</Grid>*/}
-
+                                <Grid item xs={2}>
+                                    <FormControl variant="outlined" margin="dense" fullWidth>
+                                        <TextField
+                                            label="显卡序号"
+                                            value={cardNO}
+                                            helperText="输入显卡序号，多张显卡,分割"
+                                            onChange={(e) => setCardNO(e.target.value)}
+                                            size="small"
+                                        />
+                                    </FormControl>
+                                </Grid>
                                 <Grid item xs={2}>
                                     <FormControl variant="outlined" margin="dense" fullWidth>
                                         <InputLabel id="finetuning_type-label">微调方法</InputLabel>
@@ -1173,7 +1232,7 @@ const TrainDetail = () => {
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                <Grid item xs={5}>
+                                <Grid item xs={4}>
                                     <FormControl variant="outlined" margin="dense" fullWidth>
                                         <TextField
                                             label="模型路径"
@@ -1184,7 +1243,7 @@ const TrainDetail = () => {
                                         />
                                     </FormControl>
                                 </Grid>
-                                <Grid item xs={5}>
+                                <Grid item xs={4}>
                                     <FormControl variant="outlined" margin="dense" fullWidth>
                                         <div style={{display: 'flex'}}>
                                             <TextField
@@ -1436,112 +1495,157 @@ const TrainDetail = () => {
 
                                         <Grid item xs={3}>
                                             <FormControl variant="outlined" margin="dense" fullWidth>
-                                                <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="cutoff_len-label">截断长度</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof cutoff_len === 'number' ? cutoff_len : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setCutoff_len(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={4}
-                                                            max={65536}
-                                                            type='number'
-                                                        aria-labelledby="cutoff_len-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof cutoff_len === 'number' ? cutoff_len : 0}
+                                                                onChange={(e, newValue) => {
+                                                                    setCutoff_len(newValue)
+                                                                }}
+                                                                step={1}
+                                                                min={4}
+                                                                max={65536}
+                                                                type='number'
+                                                                aria-labelledby="cutoff_len-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        label="截断长度"
-                                                        value={cutoff_len}
-                                                        onChange={(e) => setCutoff_len(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>输入序列分词后的最大长度</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            label="截断长度"
+                                                            value={cutoff_len}
+                                                            onChange={(e) => setCutoff_len(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>输入序列分词后的最大长度</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
                                         <Grid item xs={3}>
                                             <FormControl variant="outlined" margin="dense" fullWidth>
-                                                 <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="batch_size-label">批处理大小</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof batch_size === 'number' ? batch_size : 1}
-                                                        onChange={(e, newValue) => {
-                                                            setBatch_size(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={1}
-                                                            max={1024}
-                                                            type='number'
-                                                        aria-labelledby="batch_size-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof batch_size === 'number' ? batch_size : 1}
+                                                                onChange={(e, newValue) => {
+                                                                    setBatch_size(newValue)
+                                                                }}
+                                                                step={1}
+                                                                min={1}
+                                                                max={1024}
+                                                                type='number'
+                                                                aria-labelledby="batch_size-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        label="批处理大小"
-                                                        value={batch_size}
-                                                        onChange={(e) => setBatch_size(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>每个GPU处理的样本数量</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            label="批处理大小"
+                                                            value={batch_size}
+                                                            onChange={(e) => setBatch_size(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>每个GPU处理的样本数量</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
                                         <Grid item xs={3}>
                                             <FormControl variant="outlined" margin="dense" fullWidth>
-                                                 <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
-                                                    <FormLabel id="gradient_accumulation_steps-label">梯度累积</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof gradient_accumulation_steps === 'number' ? gradient_accumulation_steps : 1}
-                                                        onChange={(e, newValue) => {
-                                                            setGradient_accumulation_steps(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={1}
-                                                            max={1024}
-                                                            type='number'
-                                                        aria-labelledby="gradient_accumulation_steps-slider"
-                                                    />
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
+                                                    <FormLabel
+                                                        id="gradient_accumulation_steps-label">梯度累积</FormLabel>
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof gradient_accumulation_steps === 'number' ? gradient_accumulation_steps : 1}
+                                                                onChange={(e, newValue) => {
+                                                                    setGradient_accumulation_steps(newValue)
+                                                                }}
+                                                                step={1}
+                                                                min={1}
+                                                                max={1024}
+                                                                type='number'
+                                                                aria-labelledby="gradient_accumulation_steps-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={gradient_accumulation_steps}
-                                                        onChange={(e) => setGradient_accumulation_steps(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>梯度累积的步数</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={gradient_accumulation_steps}
+                                                            onChange={(e) => setGradient_accumulation_steps(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>梯度累积的步数</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
 
                                         <Grid item xs={3}>
                                             <FormControl variant="outlined" margin="dense" fullWidth>
-                                                 <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="val_size-label">验证集比例</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof val_size === 'number' ? val_size : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setVal_size(newValue)
-                                                        }}
-                                                            step={0.001}
-                                                            min={0}
-                                                            max={1}
-                                                            type='number'
-                                                        aria-labelledby="val_size-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof val_size === 'number' ? val_size : 0}
+                                                                onChange={(e, newValue) => {
+                                                                    setVal_size(newValue)
+                                                                }}
+                                                                step={0.001}
+                                                                min={0}
+                                                                max={1}
+                                                                type='number'
+                                                                aria-labelledby="val_size-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={val_size}
-                                                        onChange={(e) => setVal_size(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>验证集占全部样本的百分比</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={val_size}
+                                                            onChange={(e) => setVal_size(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>验证集占全部样本的百分比</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -1609,28 +1713,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setLogging_steps(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="logging_steps-label">日志间隔</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof logging_steps === 'number' ? logging_steps : 1}
-                                                        onChange={(e, newValue) => {
-                                                            setLogging_steps(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={1}
-                                                            max={996}
-                                                            type='number'
-                                                        aria-labelledby="logging_steps-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof logging_steps === 'number' ? logging_steps : 1}
+                                                                onChange={(e, newValue) => {
+                                                                    setLogging_steps(newValue)
+                                                                }}
+                                                                step={1}
+                                                                min={1}
+                                                                max={996}
+                                                                type='number'
+                                                                aria-labelledby="logging_steps-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={logging_steps}
-                                                        onChange={(e) => setLogging_steps(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>每两次日志输出间的更新步数</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={logging_steps}
+                                                            onChange={(e) => setLogging_steps(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>每两次日志输出间的更新步数</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -1643,28 +1758,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setSave_steps(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="save_steps-label">保存间隔</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof save_steps === 'number' ? save_steps : 10}
-                                                        onChange={(e, newValue) => {
-                                                            setSave_steps(newValue)
-                                                        }}
-                                                            step={10}
-                                                            min={10}
-                                                            max={5000}
-                                                            type='number'
-                                                        aria-labelledby="save_steps-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof save_steps === 'number' ? save_steps : 10}
+                                                                onChange={(e, newValue) => {
+                                                                    setSave_steps(newValue)
+                                                                }}
+                                                                step={10}
+                                                                min={10}
+                                                                max={5000}
+                                                                type='number'
+                                                                aria-labelledby="save_steps-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={save_steps}
-                                                        onChange={(e) => setSave_steps(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>每两次断点保存间的更新步数</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={save_steps}
+                                                            onChange={(e) => setSave_steps(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>每两次断点保存间的更新步数</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -1677,28 +1803,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setWarmup_steps(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="warmup_steps-label">预热步数</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof warmup_steps === 'number' ? warmup_steps : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setWarmup_steps(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={0}
-                                                            max={5000}
-                                                            type='number'
-                                                        aria-labelledby="warmup_steps-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof warmup_steps === 'number' ? warmup_steps : 0}
+                                                                onChange={(e, newValue) => {
+                                                                    setWarmup_steps(newValue)
+                                                                }}
+                                                                step={1}
+                                                                min={0}
+                                                                max={5000}
+                                                                type='number'
+                                                                aria-labelledby="warmup_steps-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={warmup_steps}
-                                                        onChange={(e) => setWarmup_steps(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>学习率预热采用的步数</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={warmup_steps}
+                                                            onChange={(e) => setWarmup_steps(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>学习率预热采用的步数</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -1711,28 +1848,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setNeftune_alpha(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="neftune_alpha-label">NEFTune 噪声参数</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof neftune_alpha === 'number' ? neftune_alpha : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setNeftune_alpha(newValue)
-                                                        }}
-                                                            step={0.1}
-                                                            min={0}
-                                                            max={10}
-                                                            type='number'
-                                                        aria-labelledby="neftune_alpha-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof neftune_alpha === 'number' ? neftune_alpha : 0}
+                                                                onChange={(e, newValue) => {
+                                                                    setNeftune_alpha(newValue)
+                                                                }}
+                                                                step={0.1}
+                                                                min={0}
+                                                                max={10}
+                                                                type='number'
+                                                                aria-labelledby="neftune_alpha-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={neftune_alpha}
-                                                        onChange={(e) => setNeftune_alpha(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>嵌入向量所添加的噪声大小</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={neftune_alpha}
+                                                            onChange={(e) => setNeftune_alpha(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>嵌入向量所添加的噪声大小</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -1814,28 +1962,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setFreeze_trainable_layers(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                 <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="freeze_trainable_layers-label">可训练层数</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof freeze_trainable_layers === 'number' ? freeze_trainable_layers : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setFreeze_trainable_layers(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={-128}
-                                                            max={128}
-                                                            type='number'
-                                                        aria-labelledby="freeze_trainable_layers-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof freeze_trainable_layers === 'number' ? freeze_trainable_layers : 0}
+                                                                onChange={(e, newValue) => {
+                                                                    setFreeze_trainable_layers(newValue)
+                                                                }}
+                                                                step={1}
+                                                                min={-128}
+                                                                max={128}
+                                                                type='number'
+                                                                aria-labelledby="freeze_trainable_layers-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={freeze_trainable_layers}
-                                                        onChange={(e) => setFreeze_trainable_layers(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>最末尾（+）/最前端（-）可训练隐藏层的数量</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={freeze_trainable_layers}
+                                                            onChange={(e) => setFreeze_trainable_layers(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>最末尾（+）/最前端（-）可训练隐藏层的数量</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -1883,28 +2042,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setLora_rank(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                 <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="lora_rank-label">LoRA 秩</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof lora_rank === 'number' ? lora_rank : 1}
-                                                        onChange={(e, newValue) => {
-                                                            setLora_rank(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={1}
-                                                            max={1024}
-                                                            type='number'
-                                                        aria-labelledby="lora_rank-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof lora_rank === 'number' ? lora_rank : 1}
+                                                                onChange={(e, newValue) => {
+                                                                    setLora_rank(newValue)
+                                                                }}
+                                                                step={1}
+                                                                min={1}
+                                                                max={1024}
+                                                                type='number'
+                                                                aria-labelledby="lora_rank-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={lora_rank}
-                                                        onChange={(e) => setLora_rank(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>LoRA 矩阵的秩大小</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={lora_rank}
+                                                            onChange={(e) => setLora_rank(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>LoRA 矩阵的秩大小</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -1917,28 +2087,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setLora_alpha(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                 <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="lora_alpha-label">LoRA 缩放系数</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof lora_alpha === 'number' ? lora_alpha : 1}
-                                                        onChange={(e, newValue) => {
-                                                            setLora_alpha(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={1}
-                                                            max={2048}
-                                                            type='number'
-                                                        aria-labelledby="lora_alpha-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof lora_alpha === 'number' ? lora_alpha : 1}
+                                                                onChange={(e, newValue) => {
+                                                                    setLora_alpha(newValue)
+                                                                }}
+                                                                step={1}
+                                                                min={1}
+                                                                max={2048}
+                                                                type='number'
+                                                                aria-labelledby="lora_alpha-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={lora_alpha}
-                                                        onChange={(e) => setLora_alpha(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>LoRA 缩放系数大小</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={lora_alpha}
+                                                            onChange={(e) => setLora_alpha(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>LoRA 缩放系数大小</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -1951,28 +2132,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setLora_dropout(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                 <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="lora_dropout-label">LoRA 随机丢弃</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof lora_dropout === 'number' ? lora_dropout : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setLora_dropout(newValue)
-                                                        }}
-                                                            step={0.01}
-                                                            min={0}
-                                                            max={1}
-                                                            type='number'
-                                                        aria-labelledby="lora_dropout-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof lora_dropout === 'number' ? lora_dropout : 0}
+                                                                onChange={(e, newValue) => {
+                                                                    setLora_dropout(newValue)
+                                                                }}
+                                                                step={0.01}
+                                                                min={0}
+                                                                max={1}
+                                                                type='number'
+                                                                aria-labelledby="lora_dropout-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={lora_dropout}
-                                                        onChange={(e) => setLora_dropout(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>LoRA 权重随机丢弃的概率</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={lora_dropout}
+                                                            onChange={(e) => setLora_dropout(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>LoRA 权重随机丢弃的概率</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -1985,28 +2177,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setLoraplus_lr_ratio(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                 <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="loraplus_lr_ratio-label">LoRA+ 学习率比例</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof loraplus_lr_ratio === 'number' ? loraplus_lr_ratio : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setLoraplus_lr_ratio(newValue)
-                                                        }}
-                                                            step={0.01}
-                                                            min={0}
-                                                            max={64}
-                                                            type='number'
-                                                        aria-labelledby="loraplus_lr_ratio-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof loraplus_lr_ratio === 'number' ? loraplus_lr_ratio : 0}
+                                                                onChange={(e, newValue) => {
+                                                                    setLoraplus_lr_ratio(newValue)
+                                                                }}
+                                                                step={0.01}
+                                                                min={0}
+                                                                max={64}
+                                                                type='number'
+                                                                aria-labelledby="loraplus_lr_ratio-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={loraplus_lr_ratio}
-                                                        onChange={(e) => setLoraplus_lr_ratio(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>LoRA+ 中 B 矩阵的学习率倍数</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={loraplus_lr_ratio}
+                                                            onChange={(e) => setLoraplus_lr_ratio(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>LoRA+ 中 B 矩阵的学习率倍数</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -2075,28 +2278,39 @@ const TrainDetail = () => {
                                                 {/*    onChange={(e) => setDpo_beta(e.target.value)}*/}
                                                 {/*    size="small"*/}
                                                 {/*/>*/}
-                                                 <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexFlow: 'column',
+                                                    padding: '5px',
+                                                    border: '1px solid rgb(192, 192, 192)',
+                                                    borderRadius: '5px'
+                                                }}>
                                                     <FormLabel id="dpo_beta-label">DPO beta 参数</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof dpo_beta === 'number' ? dpo_beta : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setDpo_beta(newValue)
-                                                        }}
-                                                            step={0.01}
-                                                            min={0}
-                                                            max={1}
-                                                            type='number'
-                                                        aria-labelledby="dpo_beta-slider"
-                                                    />
+                                                    <div
+                                                        style={{display: 'flex', flexFlow: 'row', paddingLeft: '10px'}}>
+                                                        <Slider sx={{flexGrow: 1}}
+                                                                value={typeof dpo_beta === 'number' ? dpo_beta : 0}
+                                                                onChange={(e, newValue) => {
+                                                                    setDpo_beta(newValue)
+                                                                }}
+                                                                step={0.01}
+                                                                min={0}
+                                                                max={1}
+                                                                type='number'
+                                                                aria-labelledby="dpo_beta-slider"
+                                                        />
                                                         <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={dpo_beta}
-                                                        onChange={(e) => setDpo_beta(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>DPO 损失函数中 beta 超参数大小</FormHelperText>
+                                                            sx={{
+                                                                width: '80px',
+                                                                marginLeft: '15px',
+                                                                '& .MuiInputBase-input': {textAlign: 'center'}
+                                                            }}
+                                                            value={dpo_beta}
+                                                            onChange={(e) => setDpo_beta(e.target.value)}
+                                                            size="small"
+                                                        />
+                                                    </div>
+                                                    <FormHelperText>DPO 损失函数中 beta 超参数大小</FormHelperText>
                                                 </div>
                                             </FormControl>
                                         </Grid>
@@ -2109,29 +2323,43 @@ const TrainDetail = () => {
                                                     {/*    onChange={(e) => setDpo_ftx(e.target.value)}*/}
                                                     {/*    size="small"*/}
                                                     {/*/>*/}
-                                                    <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
-                                                    <FormLabel id="dpo_ftx-label">DPO-ftx 权重</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof dpo_ftx === 'number' ? dpo_ftx : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setDpo_ftx(newValue)
-                                                        }}
-                                                            step={0.01}
-                                                            min={0}
-                                                            max={10}
-                                                            type='number'
-                                                        aria-labelledby="dpo_ftx-slider"
-                                                    />
-                                                        <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={dpo_ftx}
-                                                        onChange={(e) => setDpo_ftx(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>DPO-ftx 中 SFT 损失的权重大小</FormHelperText>
-                                                </div>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexFlow: 'column',
+                                                        padding: '5px',
+                                                        border: '1px solid rgb(192, 192, 192)',
+                                                        borderRadius: '5px'
+                                                    }}>
+                                                        <FormLabel id="dpo_ftx-label">DPO-ftx 权重</FormLabel>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            flexFlow: 'row',
+                                                            paddingLeft: '10px'
+                                                        }}>
+                                                            <Slider sx={{flexGrow: 1}}
+                                                                    value={typeof dpo_ftx === 'number' ? dpo_ftx : 0}
+                                                                    onChange={(e, newValue) => {
+                                                                        setDpo_ftx(newValue)
+                                                                    }}
+                                                                    step={0.01}
+                                                                    min={0}
+                                                                    max={10}
+                                                                    type='number'
+                                                                    aria-labelledby="dpo_ftx-slider"
+                                                            />
+                                                            <Input
+                                                                sx={{
+                                                                    width: '80px',
+                                                                    marginLeft: '15px',
+                                                                    '& .MuiInputBase-input': {textAlign: 'center'}
+                                                                }}
+                                                                value={dpo_ftx}
+                                                                onChange={(e) => setDpo_ftx(e.target.value)}
+                                                                size="small"
+                                                            />
+                                                        </div>
+                                                        <FormHelperText>DPO-ftx 中 SFT 损失的权重大小</FormHelperText>
+                                                    </div>
                                                 </FormControl>
                                             </Grid></>)}
                                         {training_stage == 'orpo' &&
@@ -2144,29 +2372,43 @@ const TrainDetail = () => {
                                                     {/*    onChange={(e) => setOrpo_beta(e.target.value)}*/}
                                                     {/*    size="small"*/}
                                                     {/*/>*/}
-                                                    <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
-                                                    <FormLabel id="orpo_beta-label">ORPO beta 参数</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof orpo_beta === 'number' ? orpo_beta : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setOrpo_beta(newValue)
-                                                        }}
-                                                            step={0.01}
-                                                            min={0}
-                                                            max={1}
-                                                            type='number'
-                                                        aria-labelledby="orpo_beta-slider"
-                                                    />
-                                                        <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={orpo_beta}
-                                                        onChange={(e) => setOrpo_beta(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>ORPO 损失函数中 beta 超参数大小</FormHelperText>
-                                                </div>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexFlow: 'column',
+                                                        padding: '5px',
+                                                        border: '1px solid rgb(192, 192, 192)',
+                                                        borderRadius: '5px'
+                                                    }}>
+                                                        <FormLabel id="orpo_beta-label">ORPO beta 参数</FormLabel>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            flexFlow: 'row',
+                                                            paddingLeft: '10px'
+                                                        }}>
+                                                            <Slider sx={{flexGrow: 1}}
+                                                                    value={typeof orpo_beta === 'number' ? orpo_beta : 0}
+                                                                    onChange={(e, newValue) => {
+                                                                        setOrpo_beta(newValue)
+                                                                    }}
+                                                                    step={0.01}
+                                                                    min={0}
+                                                                    max={1}
+                                                                    type='number'
+                                                                    aria-labelledby="orpo_beta-slider"
+                                                            />
+                                                            <Input
+                                                                sx={{
+                                                                    width: '80px',
+                                                                    marginLeft: '15px',
+                                                                    '& .MuiInputBase-input': {textAlign: 'center'}
+                                                                }}
+                                                                value={orpo_beta}
+                                                                onChange={(e) => setOrpo_beta(e.target.value)}
+                                                                size="small"
+                                                            />
+                                                        </div>
+                                                        <FormHelperText>ORPO 损失函数中 beta 超参数大小</FormHelperText>
+                                                    </div>
                                                 </FormControl>
                                             </Grid>}
                                         {training_stage == 'ppo' && <Grid item xs={3}>
@@ -2226,29 +2468,43 @@ const TrainDetail = () => {
                                                     {/*    onChange={(e) => setGalore_rank(e.target.value)}*/}
                                                     {/*    size="small"*/}
                                                     {/*/>*/}
-                                                    <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
-                                                    <FormLabel id="galore_rank-label">GaLore 秩</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof galore_rank === 'number' ? galore_rank : 1}
-                                                        onChange={(e, newValue) => {
-                                                            setGalore_rank(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={1}
-                                                            max={1024}
-                                                            type='number'
-                                                        aria-labelledby="galore_rank-slider"
-                                                    />
-                                                        <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={galore_rank}
-                                                        onChange={(e) => setGalore_rank(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>GaLore 梯度的秩大小</FormHelperText>
-                                                </div>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexFlow: 'column',
+                                                        padding: '5px',
+                                                        border: '1px solid rgb(192, 192, 192)',
+                                                        borderRadius: '5px'
+                                                    }}>
+                                                        <FormLabel id="galore_rank-label">GaLore 秩</FormLabel>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            flexFlow: 'row',
+                                                            paddingLeft: '10px'
+                                                        }}>
+                                                            <Slider sx={{flexGrow: 1}}
+                                                                    value={typeof galore_rank === 'number' ? galore_rank : 1}
+                                                                    onChange={(e, newValue) => {
+                                                                        setGalore_rank(newValue)
+                                                                    }}
+                                                                    step={1}
+                                                                    min={1}
+                                                                    max={1024}
+                                                                    type='number'
+                                                                    aria-labelledby="galore_rank-slider"
+                                                            />
+                                                            <Input
+                                                                sx={{
+                                                                    width: '80px',
+                                                                    marginLeft: '15px',
+                                                                    '& .MuiInputBase-input': {textAlign: 'center'}
+                                                                }}
+                                                                value={galore_rank}
+                                                                onChange={(e) => setGalore_rank(e.target.value)}
+                                                                size="small"
+                                                            />
+                                                        </div>
+                                                        <FormHelperText>GaLore 梯度的秩大小</FormHelperText>
+                                                    </div>
                                                 </FormControl>
                                             </Grid>
                                             <Grid item xs={2}>
@@ -2260,29 +2516,44 @@ const TrainDetail = () => {
                                                     {/*    onChange={(e) => setGalore_update_interval(e.target.value)}*/}
                                                     {/*    size="small"*/}
                                                     {/*/>*/}
-                                                    <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
-                                                    <FormLabel id="galore_update_interval-label">更新间隔</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof galore_update_interval === 'number' ? galore_update_interval : 1}
-                                                        onChange={(e, newValue) => {
-                                                            setGalore_update_interval(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={1}
-                                                            max={1024}
-                                                            type='number'
-                                                        aria-labelledby="galore_update_interval-slider"
-                                                    />
-                                                        <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={galore_update_interval}
-                                                        onChange={(e) => setGalore_update_interval(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>相邻两次投影更新的步数</FormHelperText>
-                                                </div>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexFlow: 'column',
+                                                        padding: '5px',
+                                                        border: '1px solid rgb(192, 192, 192)',
+                                                        borderRadius: '5px'
+                                                    }}>
+                                                        <FormLabel
+                                                            id="galore_update_interval-label">更新间隔</FormLabel>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            flexFlow: 'row',
+                                                            paddingLeft: '10px'
+                                                        }}>
+                                                            <Slider sx={{flexGrow: 1}}
+                                                                    value={typeof galore_update_interval === 'number' ? galore_update_interval : 1}
+                                                                    onChange={(e, newValue) => {
+                                                                        setGalore_update_interval(newValue)
+                                                                    }}
+                                                                    step={1}
+                                                                    min={1}
+                                                                    max={1024}
+                                                                    type='number'
+                                                                    aria-labelledby="galore_update_interval-slider"
+                                                            />
+                                                            <Input
+                                                                sx={{
+                                                                    width: '80px',
+                                                                    marginLeft: '15px',
+                                                                    '& .MuiInputBase-input': {textAlign: 'center'}
+                                                                }}
+                                                                value={galore_update_interval}
+                                                                onChange={(e) => setGalore_update_interval(e.target.value)}
+                                                                size="small"
+                                                            />
+                                                        </div>
+                                                        <FormHelperText>相邻两次投影更新的步数</FormHelperText>
+                                                    </div>
                                                 </FormControl>
                                             </Grid>
                                             <Grid item xs={3}>
@@ -2294,29 +2565,43 @@ const TrainDetail = () => {
                                                     {/*    onChange={(e) => setGalore_scale(e.target.value)}*/}
                                                     {/*    size="small"*/}
                                                     {/*/>*/}
-                                                    <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
-                                                    <FormLabel id="galore_scale-label">GaLore 缩放系数</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof galore_scale === 'number' ? galore_scale : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setGalore_scale(newValue)
-                                                        }}
-                                                            step={0.01}
-                                                            min={0}
-                                                            max={1}
-                                                            type='number'
-                                                        aria-labelledby="galore_scale-slider"
-                                                    />
-                                                        <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={galore_scale}
-                                                        onChange={(e) => setGalore_scale(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>GaLore 缩放系数大小</FormHelperText>
-                                                </div>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexFlow: 'column',
+                                                        padding: '5px',
+                                                        border: '1px solid rgb(192, 192, 192)',
+                                                        borderRadius: '5px'
+                                                    }}>
+                                                        <FormLabel id="galore_scale-label">GaLore 缩放系数</FormLabel>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            flexFlow: 'row',
+                                                            paddingLeft: '10px'
+                                                        }}>
+                                                            <Slider sx={{flexGrow: 1}}
+                                                                    value={typeof galore_scale === 'number' ? galore_scale : 0}
+                                                                    onChange={(e, newValue) => {
+                                                                        setGalore_scale(newValue)
+                                                                    }}
+                                                                    step={0.01}
+                                                                    min={0}
+                                                                    max={1}
+                                                                    type='number'
+                                                                    aria-labelledby="galore_scale-slider"
+                                                            />
+                                                            <Input
+                                                                sx={{
+                                                                    width: '80px',
+                                                                    marginLeft: '15px',
+                                                                    '& .MuiInputBase-input': {textAlign: 'center'}
+                                                                }}
+                                                                value={galore_scale}
+                                                                onChange={(e) => setGalore_scale(e.target.value)}
+                                                                size="small"
+                                                            />
+                                                        </div>
+                                                        <FormHelperText>GaLore 缩放系数大小</FormHelperText>
+                                                    </div>
                                                 </FormControl>
                                             </Grid>
                                             <Grid item xs={3}>
@@ -2404,29 +2689,44 @@ const TrainDetail = () => {
                                                     {/*    onChange={(e) => setBadam_switch_interval(e.target.value)}*/}
                                                     {/*    size="small"*/}
                                                     {/*/>*/}
-                                                    <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
-                                                    <FormLabel id="badam_switch_interval-label">切换频率</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof badam_switch_interval === 'number' ? badam_switch_interval : 1}
-                                                        onChange={(e, newValue) => {
-                                                            setBadam_switch_interval(newValue)
-                                                        }}
-                                                            step={1}
-                                                            min={1}
-                                                            max={1024}
-                                                            type='number'
-                                                        aria-labelledby="badam_switch_interval-slider"
-                                                    />
-                                                        <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={badam_switch_interval}
-                                                        onChange={(e) => setBadam_switch_interval(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>Layer-wise BAdam 优化器的块切换频率</FormHelperText>
-                                                </div>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexFlow: 'column',
+                                                        padding: '5px',
+                                                        border: '1px solid rgb(192, 192, 192)',
+                                                        borderRadius: '5px'
+                                                    }}>
+                                                        <FormLabel id="badam_switch_interval-label">切换频率</FormLabel>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            flexFlow: 'row',
+                                                            paddingLeft: '10px'
+                                                        }}>
+                                                            <Slider sx={{flexGrow: 1}}
+                                                                    value={typeof badam_switch_interval === 'number' ? badam_switch_interval : 1}
+                                                                    onChange={(e, newValue) => {
+                                                                        setBadam_switch_interval(newValue)
+                                                                    }}
+                                                                    step={1}
+                                                                    min={1}
+                                                                    max={1024}
+                                                                    type='number'
+                                                                    aria-labelledby="badam_switch_interval-slider"
+                                                            />
+                                                            <Input
+                                                                sx={{
+                                                                    width: '80px',
+                                                                    marginLeft: '15px',
+                                                                    '& .MuiInputBase-input': {textAlign: 'center'}
+                                                                }}
+                                                                value={badam_switch_interval}
+                                                                onChange={(e) => setBadam_switch_interval(e.target.value)}
+                                                                size="small"
+                                                            />
+                                                        </div>
+                                                        <FormHelperText>Layer-wise BAdam
+                                                            优化器的块切换频率</FormHelperText>
+                                                    </div>
                                                 </FormControl>
                                             </Grid>
                                             <Grid item xs={3}>
@@ -2438,29 +2738,45 @@ const TrainDetail = () => {
                                                     {/*    onChange={(e) => setBadam_update_ratio(e.target.value)}*/}
                                                     {/*    size="small"*/}
                                                     {/*/>*/}
-                                                    <div style={{display: 'flex',flexFlow:'column',padding: '5px',border: '1px solid rgb(192, 192, 192)',borderRadius: '5px'}}>
-                                                    <FormLabel id="badam_update_ratio-label">Block 更新比例</FormLabel>
-                                                    <div style={{display:'flex',flexFlow:'row',paddingLeft:'10px'}}>
-                                                    <Slider sx={{flexGrow:1}}
-                                                        value={typeof badam_update_ratio === 'number' ? badam_update_ratio : 0}
-                                                        onChange={(e, newValue) => {
-                                                            setBadam_update_ratio(newValue)
-                                                        }}
-                                                            step={0.01}
-                                                            min={0}
-                                                            max={1}
-                                                            type='number'
-                                                        aria-labelledby="badam_update_ratio-slider"
-                                                    />
-                                                        <Input
-                                                        sx={{width:'80px',marginLeft:'15px','& .MuiInputBase-input': {textAlign: 'center'}}}
-                                                        value={badam_update_ratio}
-                                                        onChange={(e) => setBadam_update_ratio(e.target.value)}
-                                                        size="small"
-                                                    />
-                                                </div>
-                                                      <FormHelperText>Ratio-wise BAdam 优化器的更新比例</FormHelperText>
-                                                </div>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexFlow: 'column',
+                                                        padding: '5px',
+                                                        border: '1px solid rgb(192, 192, 192)',
+                                                        borderRadius: '5px'
+                                                    }}>
+                                                        <FormLabel id="badam_update_ratio-label">Block
+                                                            更新比例</FormLabel>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            flexFlow: 'row',
+                                                            paddingLeft: '10px'
+                                                        }}>
+                                                            <Slider sx={{flexGrow: 1}}
+                                                                    value={typeof badam_update_ratio === 'number' ? badam_update_ratio : 0}
+                                                                    onChange={(e, newValue) => {
+                                                                        setBadam_update_ratio(newValue)
+                                                                    }}
+                                                                    step={0.01}
+                                                                    min={0}
+                                                                    max={1}
+                                                                    type='number'
+                                                                    aria-labelledby="badam_update_ratio-slider"
+                                                            />
+                                                            <Input
+                                                                sx={{
+                                                                    width: '80px',
+                                                                    marginLeft: '15px',
+                                                                    '& .MuiInputBase-input': {textAlign: 'center'}
+                                                                }}
+                                                                value={badam_update_ratio}
+                                                                onChange={(e) => setBadam_update_ratio(e.target.value)}
+                                                                size="small"
+                                                            />
+                                                        </div>
+                                                        <FormHelperText>Ratio-wise BAdam
+                                                            优化器的更新比例</FormHelperText>
+                                                    </div>
                                                 </FormControl>
                                             </Grid>
                                         </>
@@ -2471,65 +2787,73 @@ const TrainDetail = () => {
                         </Paper>
                         <Paper elevation={2} style={{padding: "20px", marginTop: "10px"}}>
                             <Grid container spacing={1}>
+                                <Grid item xs={8}>
+                                    {/*<FormControl variant="outlined" margin="dense" fullWidth>*/}
+                                    {/*    <TextField*/}
+                                    {/*        label="输出目录"*/}
+                                    {/*        value={output_dir}*/}
+                                    {/*        helperText="保存结果的路径"*/}
+                                    {/*        onChange={(e) => setOutput_dir(e.target.value)}*/}
+                                    {/*        size="small"*/}
+                                    {/*    />*/}
+                                    {/*</FormControl>*/}
+                                </Grid>
                                 <Grid item xs={4}>
                                     <FormControl variant="outlined" margin="dense" fullWidth>
-                                        <TextField
-                                            label="输出目录"
-                                            value={output_dir}
-                                            helperText="保存结果的路径"
-                                            onChange={(e) => setOutput_dir(e.target.value)}
-                                            size="small"
-                                        />
-                                    </FormControl>
-                                </Grid>
-                                <Grid item xs={8}>
-                                    <FormControl variant="outlined" margin="dense" fullWidth>
                                         <div style={{display: 'flex'}}>
-                                            <TextField
-                                                label="配置路径"
-                                                value={config_path}
-                                                style={{flexGrow: 1}}
-                                                helperText=""
-                                                onChange={(e) => setConfig_path(e.target.value)}
-                                                size="small"
-                                            />
-                                            <Button
-                                                variant="contained"
-                                                size="small"
-                                                endIcon={<VisibilitySharpIcon/>}
-                                                className="addBtn"
-                                                onClick={handleViewDataset}
-                                            >
-                                                保存训练参数
-                                            </Button>
-                                            <Button
-                                                variant="contained"
-                                                size="small"
-                                                sx={{display: 'none'}}
-                                                endIcon={<VisibilitySharpIcon/>}
-                                                className="addBtn"
-                                                onClick={handleViewDataset}
-                                            >
-                                                载入训练参数
-                                            </Button>
-                                            <Button
+                                            {/*<TextField*/}
+                                            {/*    label="配置路径"*/}
+                                            {/*    value={config_path}*/}
+                                            {/*    style={{flexGrow: 1}}*/}
+                                            {/*    helperText=""*/}
+                                            {/*    onChange={(e) => setConfig_path(e.target.value)}*/}
+                                            {/*    size="small"*/}
+                                            {/*/>*/}
+                                            {/*<Button*/}
+                                            {/*    variant="contained"*/}
+                                            {/*    size="small"*/}
+                                            {/*    endIcon={<VisibilitySharpIcon/>}*/}
+                                            {/*    className="addBtn"*/}
+                                            {/*    onClick={handleViewDataset}*/}
+                                            {/*>*/}
+                                            {/*    保存训练参数*/}
+                                            {/*</Button>*/}
+                                            {/*<Button*/}
+                                            {/*    variant="contained"*/}
+                                            {/*    size="small"*/}
+                                            {/*    sx={{display: 'none'}}*/}
+                                            {/*    endIcon={<VisibilitySharpIcon/>}*/}
+                                            {/*    className="addBtn"*/}
+                                            {/*    onClick={handleViewDataset}*/}
+                                            {/*>*/}
+                                            {/*    载入训练参数*/}
+                                            {/*</Button>*/}
+                                            <LoadingButton
                                                 variant="contained"
                                                 size="small"
                                                 endIcon={<RocketLaunchIcon/>}
                                                 className="addBtn"
-                                                onClick={handleHighTrainModel}
+                                                loading={loading}
+                                                loadingPosition="end"
+                                                onClick={() => {
+                                                    setConfirmType(3);
+                                                    setIsShowConfirm(true);
+                                                }}
                                             >
-                                                开始
-                                            </Button>
+                                                模型训练
+                                            </LoadingButton>
                                             <Button
-                                                enabled={isHighEnable}
+                                                disabled={!isHighEnable}
                                                 variant="contained"
                                                 size="small"
                                                 endIcon={<CancelIcon/>}
                                                 className="addBtn"
-                                                onClick={handleHighStopTrain}
+                                                onClick={() => {
+                                                    setConfirmType(4);
+                                                    setIsShowConfirm(true);
+                                                }}
                                             >
-                                                中断
+                                                中止训练
                                             </Button>
                                         </div>
                                     </FormControl>
@@ -2550,7 +2874,7 @@ const TrainDetail = () => {
                                                         data: yHighAxis,
                                                     },
                                                 ]}
-                                                width={500}
+                                                width={undefined}
                                                 height={320}
                                             />
                                         </Paper>
@@ -2630,6 +2954,22 @@ const TrainDetail = () => {
                     </Box>
                 </div>
             </Drawer>
+
+            <Dialog open={isShowConfirm} onClose={handleClose} aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description">
+                <DialogTitle id="alert-dialog-title">{"操作确认"}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        确认要执行该操作？
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>取消</Button>
+                    <Button onClick={handleConfirm} autoFocus>
+                        确认
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     )
 }

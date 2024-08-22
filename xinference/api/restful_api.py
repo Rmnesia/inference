@@ -464,6 +464,16 @@ class RESTfulAPI:
 
         # for custom models
         self._router.add_api_route(
+            "/v1/model_registrations/list_local_models",
+            self.list_local_models,
+            methods=["GET"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        )
+        self._router.add_api_route(
             "/v1/model_registrations/{model_type}",
             self.register_model,
             methods=["POST"],
@@ -483,6 +493,7 @@ class RESTfulAPI:
                 else None
             ),
         )
+
         self._router.add_api_route(
             "/v1/model_registrations/{model_type}",
             self.list_model_registrations,
@@ -586,16 +597,7 @@ class RESTfulAPI:
                 else None
             ),
         ),
-        self._router.add_api_route(
-            "/v1/models/list_local_models",
-            self.list_local_models,
-            methods=["GET"],
-            dependencies=(
-                [Security(self._auth_service, scopes=["models:list"])]
-                if self.is_authenticated()
-                else None
-            ),
-        ),
+
         self._router.add_api_route(
             "/v1/runner/training",
             self.training,
@@ -1634,6 +1636,29 @@ class RESTfulAPI:
             logger.error(e, exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
+    async def list_local_models(self) -> JSONResponse:
+        try:
+            directory = 'models/'
+            data_list = await (await self._get_supervisor_ref()).list_model_registrations(
+                "LLM", detailed=True
+            )
+            model_list = []
+            for data in data_list:
+                for model in os.listdir(directory):
+                    if model == data['model_name']:
+                        model_list.append(data)
+            # response = {"object": "list", "data": model_list}
+            return JSONResponse(content=model_list)
+        except FileNotFoundError as fe:
+            logger.error(fe)
+            raise HTTPException(status_code=404, detail="Data file not found.")
+        except ValueError as ve:
+            logger.error(ve)
+            raise HTTPException(status_code=400, detail="Invalid data format.")
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error.")
+
     async def get_model_registrations(
         self, model_type: str, model_name: str
     ) -> JSONResponse:
@@ -1859,28 +1884,7 @@ class RESTfulAPI:
             logger.error(e)
             raise HTTPException(status_code=500, detail="Internal Server Error.")
 
-    async def list_local_models(self) -> JSONResponse:
-        try:
-            directory = 'models/'
-            data_list = await (await self._get_supervisor_ref()).list_model_registrations(
-                "LLM", detailed=True
-            )
-            # model_list = []
-            # for data in data_list:
-            #     for model in os.listdir(directory):
-            #         if model == data['model_name']:
-            #             model_list.append(data)
-            # response = {"object": "list", "data": model_list}
-            return JSONResponse(content=data_list)
-        except FileNotFoundError as fe:
-            logger.error(fe)
-            raise HTTPException(status_code=404, detail="Data file not found.")
-        except ValueError as ve:
-            logger.error(ve)
-            raise HTTPException(status_code=400, detail="Invalid data format.")
-        except Exception as e:
-            logger.error(e)
-            raise HTTPException(status_code=500, detail="Internal Server Error.")
+
 
     async def training(self, request: Request) -> StreamingResponse:
         # 从请求体中获取参数

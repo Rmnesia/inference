@@ -13,7 +13,7 @@ import {useNavigate} from "react-router-dom";
 
 const colorArr = ['#F4F5FE', '#FDF6F4'];
 
-function ExpandableCard({card, index}) {
+function ExpandableCard({card,type, index}) {
     console.log(card);
     const navigate = useNavigate()
     const [expanded, setExpanded] = useState(false);
@@ -25,7 +25,12 @@ function ExpandableCard({card, index}) {
         setExpanded(!expanded)
     }
     const handeView = (path) => {
-        navigate(`/train_model/trainResult/${card.info.model_name}?path=${path}`)
+        if(type=='train') {
+            navigate(`/train_model/trainResult/${card.info.model_name}?path=${path}`)
+        }
+        else if(type=="test"){
+            navigate(`/test_model/detail/${card.info.model_name}?path=${path}`)
+        }
     }
     return (
         <Card elevation={hover ? 40 : 2} style={hover ? styles.containerSelected : {}}
@@ -155,11 +160,11 @@ function ExpandableCard({card, index}) {
     );
 }
 
-export default function ExpandableCardList({data}) {
+export default function ExpandableCardList({data,type}) {
     return (
         <div style={{flexFlow: 'column', margin: '10px 2rem'}}>
             {data.map((card, index) => (
-                <ExpandableCard key={index} card={card} index={index}/>
+                <ExpandableCard key={index} card={card} type={type} index={index}/>
             ))}
         </div>
     );

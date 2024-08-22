@@ -47,12 +47,12 @@ const DatasetCard = ({
     const {setSuccessMsg} = useContext(ApiContext)
     const [cookie] = useCookies(['token'])
     const navigate = useNavigate()
-        //是否显示Confirm框
-    const [isShowConfirm,setIsShowConfirm]=useState(false);
+    //是否显示Confirm框
+    const [isShowConfirm, setIsShowConfirm] = useState(false);
     //数据集类型
     const [datasetType, setDatasetType] = useState(datasetData.dataset_type)
     //数据集类型选项
-    const datasetTypeOptions=[{name: 'QA数据集', value: 'qa'}, {name: '预训练数据集', value: 'text'}]
+    const datasetTypeOptions = [{name: 'QA数据集', value: 'qa'}, {name: '预训练数据集', value: 'text'}]
     //数据集名称
     const [datasetName, setDatasetName] = useState(datasetData.dataset_name)
     //数据集描述
@@ -117,8 +117,8 @@ const DatasetCard = ({
         e.stopPropagation()
         navigate(`/dataset/detail/${datasetData.dataset_name}/${datasetData.dataset_type}`)
     }
-    const handeCustomDeleteOpen=(e)=>{
-         e.stopPropagation()
+    const handeCustomDeleteOpen = (e) => {
+        e.stopPropagation()
         setIsShowConfirm(true)
     }
     //删除数据集
@@ -169,8 +169,8 @@ const DatasetCard = ({
             setIsShowConfirm(false)
         }
     }
-    const handleClose=(e)=>{
-         e.stopPropagation()
+    const handleClose = (e) => {
+        e.stopPropagation()
         setIsShowConfirm(false)
     }
 
@@ -187,7 +187,6 @@ const DatasetCard = ({
     const getCustomParametersArr = (arr) => {
         setCustomParametersArr(arr)
     }
-
 
 
     // Set two different states based on mouse hover
@@ -212,7 +211,7 @@ const DatasetCard = ({
                     >
                         <MoreHorizSharpIcon/>
                     </IconButton>
-                     <IconButton
+                    <IconButton
                         aria-label="delete"
                         onClick={handeCustomDeleteOpen}
                     >
@@ -276,15 +275,15 @@ const DatasetCard = ({
                         }
                     })()}
                     {
-                        (()=>{
-                            if(!datasetData.create_time){
-                            return (
-                                <div style={styles.iconItem}>
-                                    <DatasetOutlined  style={styles.muiIcon}/>
-                                    <small style={styles.smallText}>默认数据集</small>
-                                </div>
-                            )
-                        }
+                        (() => {
+                            if (!datasetData.create_time) {
+                                return (
+                                    <div style={styles.iconItem}>
+                                        <DatasetOutlined style={styles.muiIcon}/>
+                                        <small style={styles.smallText}>默认数据集</small>
+                                    </div>
+                                )
+                            }
                         })()
                     }
                 </div>
@@ -409,20 +408,21 @@ const DatasetCard = ({
                     </Box>
                 </div>
             </Drawer>
-            <Dialog open={isShowConfirm} onClose={handleClose} aria-labelledby="alert-dialog-title" aria-describedby="alert-dialog-description">
-        <DialogTitle id="alert-dialog-title">{"删除确认"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            确认要删除该数据项？
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>取消</Button>
-          <Button onClick={handeCustomDelete} autoFocus>
-            确认
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Dialog open={isShowConfirm} onClose={handleClose} aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description">
+                <DialogTitle id="alert-dialog-title">{"删除确认"}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        确认要删除该数据项？
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>取消</Button>
+                    <Button onClick={handeCustomDelete} autoFocus>
+                        确认
+                    </Button>
+                </DialogActions>
+            </Dialog>
             <Snackbar
                 anchorOrigin={{vertical: 'top', horizontal: 'center'}}
                 open={openSnackbar}

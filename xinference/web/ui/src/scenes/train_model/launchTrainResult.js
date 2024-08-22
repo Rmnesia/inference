@@ -153,7 +153,7 @@ const LaunchTrainResult = ({ gpuAvailable }) => {
       {/*    ))}*/}
       {/*</div>*/}
       <ExpandableCardList data={registrationData
-          .filter((registration) => filter(registration))}/>
+          .filter((registration) => filter(registration))} type={'train'}/>
     </Box>
   )
 }

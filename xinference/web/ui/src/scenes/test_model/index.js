@@ -7,7 +7,8 @@ import { ApiContext } from '../../components/apiContext'
 import ErrorMessageSnackBar from '../../components/errorMessageSnackBar'
 import Title from '../../components/Title'
 import LaunchCustom from './launchCustom'
-import LaunchLLM from './launchLLM'
+import LaunchTrainResult from './launchTrainResult'
+//import LaunchLLM from './launchLLM'
 import LaunchModelComponent from './LaunchModelComponent'
 import {TabContext, TabList, TabPanel} from "@mui/lab";
 
@@ -82,7 +83,8 @@ const TestModel = () => {
           </TabList>
         </Box>
         <TabPanel value="/test_model/llm" sx={{ padding: 0 }}>
-          <LaunchLLM gpuAvailable={gpuAvailable} />
+           <LaunchTrainResult gpuAvailable={gpuAvailable} />
+          {/*<LaunchLLM gpuAvailable={gpuAvailable} />*/}
         </TabPanel>
         <TabPanel value="/test_model/embedding" sx={{ padding: 0 }}>
           <LaunchModelComponent

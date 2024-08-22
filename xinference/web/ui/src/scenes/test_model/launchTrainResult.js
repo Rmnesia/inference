@@ -5,12 +5,13 @@ import { useCookies } from 'react-cookie'
 import { ApiContext } from '../../components/apiContext'
 import fetcher from '../../components/fetcher'
 import HotkeyFocusTextField from '../../components/hotkeyFocusTextField'
-import ModelCard from './modelCard'
+// import ModelCard from './modelCard'
+import ExpandableCardList from "../../components/expandableCardList";
 
-const LaunchLLM = ({ gpuAvailable }) => {
+const LaunchTrainResult = ({ gpuAvailable }) => {
+  console.log(gpuAvailable)
   let endPoint = useContext(ApiContext).endPoint
   const { isCallingApi, setIsCallingApi } = useContext(ApiContext)
-  const { isUpdatingModel } = useContext(ApiContext)
   const { setErrorMsg } = useContext(ApiContext)
   const [cookie] = useCookies(['token'])
 
@@ -29,11 +30,11 @@ const LaunchLLM = ({ gpuAvailable }) => {
 
   const filter = (registration) => {
     if (!registration || typeof searchTerm !== 'string') return false
-    const modelName = registration.model_name
-      ? registration.model_name.toLowerCase()
+    const modelName = registration.info.model_name
+      ? registration.info.model_name.toLowerCase()
       : ''
-    const modelDescription = registration.model_description
-      ? registration.model_description.toLowerCase()
+    const modelDescription = registration.info.model_description
+      ? registration.info.model_description.toLowerCase()
       : ''
 
     if (
@@ -43,26 +44,23 @@ const LaunchLLM = ({ gpuAvailable }) => {
       return false
     }
     if (modelAbility && modelAbility !== 'all') {
-      if (registration.model_ability.indexOf(modelAbility) < 0) {
+      if (registration.info.model_ability.indexOf(modelAbility) < 0) {
         return false
       }
     }
     return true
   }
 
-  const update = () => {
+  const query = () => {
     if (
       isCallingApi ||
-      isUpdatingModel ||
       (cookie.token !== 'no_auth' && !sessionStorage.getItem('token'))
     )
       return
-
     try {
       setIsCallingApi(true)
 
-//      fetcher(`${endPoint}/v1/model_registrations/LLM?detailed=true`, {
-      fetcher(`${endPoint}/v1/model_registrations/list_local_models`, {
+      fetcher(`${endPoint}/logs/list_logs`, {
         method: 'GET',
       }).then((response) => {
         if (!response.ok) {
@@ -77,8 +75,10 @@ const LaunchLLM = ({ gpuAvailable }) => {
             )
         } else {
           response.json().then((data) => {
-            const builtinRegistrations = data.filter((v) => v.is_builtin)
-            setRegistrationData(builtinRegistrations)
+            if(data.model_list&&data.model_list.length>0) {
+              const builtinRegistrations = data.model_list.filter((v) =>filter(v))
+              setRegistrationData(builtinRegistrations)
+            }
           })
         }
       })
@@ -90,15 +90,15 @@ const LaunchLLM = ({ gpuAvailable }) => {
   }
 
   useEffect(() => {
-    update()
+    query()
   }, [cookie.token])
 
-  const style = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    paddingLeft: '2rem',
-    gridGap: '2rem 0rem',
-  }
+  // const style = {
+  //   display: 'grid',
+  //   gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+  //   paddingLeft: '2rem',
+  //   gridGap: '2rem 0rem',
+  // }
 
   return (
     <Box m="20px">
@@ -139,21 +139,23 @@ const LaunchLLM = ({ gpuAvailable }) => {
           />
         </FormControl>
       </div>
-      <div style={style}>
-        {registrationData
-          .filter((registration) => filter(registration))
-          .map((filteredRegistration) => (
-            <ModelCard
-              key={filteredRegistration.model_name}
-              url={endPoint}
-              modelData={filteredRegistration}
-              gpuAvailable={gpuAvailable}
-              modelType={'LLM'}
-            />
-          ))}
-      </div>
+      {/*<div style={style}>*/}
+      {/*  {registrationData*/}
+      {/*    .filter((registration) => filter(registration))*/}
+      {/*    .map((filteredRegistration) => (*/}
+      {/*      <ModelCard*/}
+      {/*        key={filteredRegistration.model_name}*/}
+      {/*        url={endPoint}*/}
+      {/*        modelData={filteredRegistration}*/}
+      {/*        gpuAvailable={gpuAvailable}*/}
+      {/*        modelType={'LLM'}*/}
+      {/*      />*/}
+      {/*    ))}*/}
+      {/*</div>*/}
+      <ExpandableCardList data={registrationData
+          .filter((registration) => filter(registration))} type={'test'}/>
     </Box>
   )
 }
 
-export default LaunchLLM
+export default LaunchTrainResult

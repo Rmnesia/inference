@@ -8,7 +8,8 @@ import {
     Grid,
     Grow, InputLabel, MenuItem, MenuList,
     Popper, Select,
-    Stack, tableCellClasses, TableContainer, TablePagination,
+    //Stack,
+    tableCellClasses, TableContainer, TablePagination,
     TextField
 } from '@mui/material'
 import React, {useContext, useEffect, useRef, useState} from 'react'
@@ -17,7 +18,7 @@ import {useNavigate, useParams} from 'react-router-dom'
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import BorderColorIcon from '@mui/icons-material/BorderColor';
-import {DataGrid} from '@mui/x-data-grid'
+// import {DataGrid} from '@mui/x-data-grid'
 import {ApiContext} from '../../components/apiContext'
 import ErrorMessageSnackBar from '../../components/errorMessageSnackBar'
 import fetcher from '../../components/fetcher'
@@ -38,7 +39,6 @@ const DatasetDetail = () => {
     const {id, type} = useParams();
     const name = id;
     const datasetType = type;
-    console.log(id)
     let endPoint = useContext(ApiContext).endPoint
     const parentRef = useRef(null)
     const [detailData, setDetailData] = useState([])
@@ -179,7 +179,6 @@ const DatasetDetail = () => {
                                         obj.system = '';
                                     }
                                 });
-                                console.log(response.data_list);
                                 setDetailData(response.data_list)
                                 setRowCount(response.total)
                                 setIsUpdatingModel(false)
@@ -195,13 +194,11 @@ const DatasetDetail = () => {
     }
     const handlePageChange = (e, newPage) => {
         setPage_num(newPage);
-        console.log(page_num)
     };
 
     const handlePageSizeChange = (e) => {
         setPage_size(e.target.value);
         setPage_num(0)
-        console.log(page_size)
     };
     //单条添加数据集数据
     const addDatasetData = (isCallingApi) => {
@@ -233,7 +230,6 @@ const DatasetDetail = () => {
                         })
                 }).then((response) => {
                     setIsShow(false);
-                    console.log(response);
                     if (!response.ok) {
                         response
                             .json()
@@ -278,7 +274,6 @@ const DatasetDetail = () => {
                 body: formData
             }).then((response) => {
                 setIsShow(false);
-                console.log(response);
                 if (!response.ok) {
                     response
                         .json()
@@ -309,7 +304,6 @@ const DatasetDetail = () => {
             fetcher(url, {
                 method: 'GET',
             }).then((response) => {
-                console.log(response);
                 if (!response.ok) {
                     response
                         .json()
@@ -341,217 +335,217 @@ const DatasetDetail = () => {
     useEffect(() => {
         update(isCallingApi)
     }, [isCallingApi, page_num, page_size, cookie.token])
-    const detailColumns = [
-        ...(datasetType === "qa" ? (name.indexOf('rlhf') >= 0 ? [
-                {
-                    field: 'question',
-                    headerName: '问题',
-                    flex: 1,
-                },
-                {
-                    field: 'answer',
-                    headerName: '输出',
-                    flex: 1,
-                    renderCell: ({row}) => {
-                        return (
-                            <Box>
-                                {row.answer.map((cur) => {
-                                    return (<div title={cur}>{cur}</div>)
-                                })
-                                }
-                            </Box>
-                        )
-                    }
-                },
-                {
-                    field: 'system',
-                    headerName: '系统Prompt',
-                    flex: 1,
-                }
-            ] : [
-                {
-                    field: 'instruction',
-                    headerName: '问题',
-                    flex: 1,
-                },
-                {
-                    field: 'input',
-                    headerName: '额外要求',
-                    flex: 1,
-                },
-                {
-                    field: 'output',
-                    headerName: '输出',
-                    flex: 1,
-                },
-                {
-                    field: 'system',
-                    headerName: '系统Prompt',
-                    minWidth: 100,
-                }]) : [{
-                field: 'text',
-                headerName: '文本',
-                flex: 1,
-            }]
-        ),
-        {
-            field: 'url',
-            headerName: '操作',
-            minWidth: 100,
-            sortable: false,
-            filterable: false,
-            disableColumnMenu: true,
-            renderCell: ({row}) => {
-                const url = row.url
-                // const openUrl = `${endPoint}/` + url
-                //    const closeUrl = `${endPoint}/v1/models/` + url
-                //    const gradioUrl = `${endPoint}/v1/ui/` + url
-
-                if (url === 'IS_LOADING') {
-                    return <div></div>
-                }
-
-                return (
-                    <Box
-                        style={{
-                            width: '100%',
-                            display: 'flex',
-                            justifyContent: 'left',
-                            alignItems: 'left',
-                        }}
-                    >
-                        <button
-                            title="编辑"
-                            style={{
-                                borderWidth: '0px',
-                                backgroundColor: 'transparent',
-                                paddingLeft: '0px',
-                                paddingRight: '10px',
-                            }}
-                            onClick={() => {
-                                setIsEditShow(true);
-                                if (datasetType === "qa") {
-                                    setInstruction(row.instruction)
-                                    setInput(row.input)
-                                    setOutput(row.output)
-                                    setSystem(row.system)
-                                } else if (datasetType === "text") {
-                                    setText(row.text)
-                                }
-                            }}
-                        >
-                            <Box
-                                width="40px"
-                                m="0 auto"
-                                p="5px"
-                                display="flex"
-                                justifyContent="center"
-                                borderRadius="4px"
-                                style={{
-                                    border: '1px solid #e5e7eb',
-                                    borderWidth: '1px',
-                                    borderColor: '#e5e7eb',
-                                }}
-                            >
-                                <BorderColorIcon/>
-                                {/*<OpenInBrowserOutlinedIcon/>*/}
-                            </Box>
-                        </button>
-                        <button
-                            title="删除"
-                            style={{
-                                borderWidth: '0px',
-                                backgroundColor: 'transparent',
-                                paddingLeft: '0px',
-                                paddingRight: '10px',
-                            }}
-                            onClick={() => {
-                                if (isCallingApi || isUpdatingModel) {
-                                    return
-                                }
-                                setIsCallingApi(true)
-                                const closeUrl = ''
-                                fetcher(closeUrl, {
-                                    method: 'DELETE',
-                                })
-                                    .then((response) => {
-                                        response.json()
-                                    })
-                                    .then(() => {
-                                        setIsCallingApi(false)
-                                    })
-                                    .catch((error) => {
-                                        console.error('Error:', error)
-                                        setIsCallingApi(false)
-                                    })
-                            }}
-                        >
-                            <Box
-                                width="40px"
-                                m="0 auto"
-                                p="5px"
-                                display="flex"
-                                justifyContent="center"
-                                borderRadius="4px"
-                                style={{
-                                    border: '1px solid #e5e7eb',
-                                    borderWidth: '1px',
-                                    borderColor: '#e5e7eb',
-                                }}
-                            >
-                                <DeleteOutlineOutlinedIcon/>
-                            </Box>
-                        </button>
-                    </Box>
-                )
-            },
-        },
-    ]
-
-    const dataGridStyle = {
-        'display': 'none',
-        '& .MuiDataGrid-cell': {
-            borderBottom: 'none',
-            fontSize: '14px',
-        },
-        '& .MuiDataGrid-columnHeaders': {
-            borderBottom: 'none',
-            backgroundColor: '#EFEFEF',
-            fontSize: '14px',
-        },
-        '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 'bold',
-        },
-        '& .MuiDataGrid-virtualScroller': {
-            overflowX: 'visible !important',
-            overflow: 'visible',
-        },
-        '& .MuiDataGrid-footerContainer': {
-            borderTop: 'none',
-        },
-        // 'border-width': '0px',
-        '& .MuiDataGrid-row': {
-            '&:nth-of-type(even)': {
-                backgroundColor: '#F5F5F5',
-            },
-        },
-    }
-
-    const noRowsOverlay = () => {
-        return (
-            <Stack height="100%" alignItems="center" justifyContent="center">
-                暂无符合条件的数据
-            </Stack>
-        )
-    }
-
-    const noResultsOverlay = () => {
-        return (
-            <Stack height="100%" alignItems="center" justifyContent="center">
-                暂无符合条件的数据
-            </Stack>
-        )
-    }
+    // const detailColumns = [
+    //     ...(datasetType === "qa" ? (name.indexOf('rlhf') >= 0 ? [
+    //             {
+    //                 field: 'question',
+    //                 headerName: '问题',
+    //                 flex: 1,
+    //             },
+    //             {
+    //                 field: 'answer',
+    //                 headerName: '输出',
+    //                 flex: 1,
+    //                 renderCell: ({row}) => {
+    //                     return (
+    //                         <Box>
+    //                             {row.answer.map((cur) => {
+    //                                 return (<div title={cur}>{cur}</div>)
+    //                             })
+    //                             }
+    //                         </Box>
+    //                     )
+    //                 }
+    //             },
+    //             {
+    //                 field: 'system',
+    //                 headerName: '系统Prompt',
+    //                 flex: 1,
+    //             }
+    //         ] : [
+    //             {
+    //                 field: 'instruction',
+    //                 headerName: '问题',
+    //                 flex: 1,
+    //             },
+    //             {
+    //                 field: 'input',
+    //                 headerName: '额外要求',
+    //                 flex: 1,
+    //             },
+    //             {
+    //                 field: 'output',
+    //                 headerName: '输出',
+    //                 flex: 1,
+    //             },
+    //             {
+    //                 field: 'system',
+    //                 headerName: '系统Prompt',
+    //                 minWidth: 100,
+    //             }]) : [{
+    //             field: 'text',
+    //             headerName: '文本',
+    //             flex: 1,
+    //         }]
+    //     ),
+    //     {
+    //         field: 'url',
+    //         headerName: '操作',
+    //         minWidth: 100,
+    //         sortable: false,
+    //         filterable: false,
+    //         disableColumnMenu: true,
+    //         renderCell: ({row}) => {
+    //             const url = row.url
+    //             // const openUrl = `${endPoint}/` + url
+    //             //    const closeUrl = `${endPoint}/v1/models/` + url
+    //             //    const gradioUrl = `${endPoint}/v1/ui/` + url
+    //
+    //             if (url === 'IS_LOADING') {
+    //                 return <div></div>
+    //             }
+    //
+    //             return (
+    //                 <Box
+    //                     style={{
+    //                         width: '100%',
+    //                         display: 'flex',
+    //                         justifyContent: 'left',
+    //                         alignItems: 'left',
+    //                     }}
+    //                 >
+    //                     <button
+    //                         title="编辑"
+    //                         style={{
+    //                             borderWidth: '0px',
+    //                             backgroundColor: 'transparent',
+    //                             paddingLeft: '0px',
+    //                             paddingRight: '10px',
+    //                         }}
+    //                         onClick={() => {
+    //                             setIsEditShow(true);
+    //                             if (datasetType === "qa") {
+    //                                 setInstruction(row.instruction)
+    //                                 setInput(row.input)
+    //                                 setOutput(row.output)
+    //                                 setSystem(row.system)
+    //                             } else if (datasetType === "text") {
+    //                                 setText(row.text)
+    //                             }
+    //                         }}
+    //                     >
+    //                         <Box
+    //                             width="40px"
+    //                             m="0 auto"
+    //                             p="5px"
+    //                             display="flex"
+    //                             justifyContent="center"
+    //                             borderRadius="4px"
+    //                             style={{
+    //                                 border: '1px solid #e5e7eb',
+    //                                 borderWidth: '1px',
+    //                                 borderColor: '#e5e7eb',
+    //                             }}
+    //                         >
+    //                             <BorderColorIcon/>
+    //                             {/*<OpenInBrowserOutlinedIcon/>*/}
+    //                         </Box>
+    //                     </button>
+    //                     <button
+    //                         title="删除"
+    //                         style={{
+    //                             borderWidth: '0px',
+    //                             backgroundColor: 'transparent',
+    //                             paddingLeft: '0px',
+    //                             paddingRight: '10px',
+    //                         }}
+    //                         onClick={() => {
+    //                             if (isCallingApi || isUpdatingModel) {
+    //                                 return
+    //                             }
+    //                             setIsCallingApi(true)
+    //                             const closeUrl = ''
+    //                             fetcher(closeUrl, {
+    //                                 method: 'DELETE',
+    //                             })
+    //                                 .then((response) => {
+    //                                     response.json()
+    //                                 })
+    //                                 .then(() => {
+    //                                     setIsCallingApi(false)
+    //                                 })
+    //                                 .catch((error) => {
+    //                                     console.error('Error:', error)
+    //                                     setIsCallingApi(false)
+    //                                 })
+    //                         }}
+    //                     >
+    //                         <Box
+    //                             width="40px"
+    //                             m="0 auto"
+    //                             p="5px"
+    //                             display="flex"
+    //                             justifyContent="center"
+    //                             borderRadius="4px"
+    //                             style={{
+    //                                 border: '1px solid #e5e7eb',
+    //                                 borderWidth: '1px',
+    //                                 borderColor: '#e5e7eb',
+    //                             }}
+    //                         >
+    //                             <DeleteOutlineOutlinedIcon/>
+    //                         </Box>
+    //                     </button>
+    //                 </Box>
+    //             )
+    //         },
+    //     },
+    // ]
+    // console.log(detailColumns)
+    // const dataGridStyle = {
+    //     'display': 'none',
+    //     '& .MuiDataGrid-cell': {
+    //         borderBottom: 'none',
+    //         fontSize: '14px',
+    //     },
+    //     '& .MuiDataGrid-columnHeaders': {
+    //         borderBottom: 'none',
+    //         backgroundColor: '#EFEFEF',
+    //         fontSize: '14px',
+    //     },
+    //     '& .MuiDataGrid-columnHeaderTitle': {
+    //         fontWeight: 'bold',
+    //     },
+    //     '& .MuiDataGrid-virtualScroller': {
+    //         overflowX: 'visible !important',
+    //         overflow: 'visible',
+    //     },
+    //     '& .MuiDataGrid-footerContainer': {
+    //         borderTop: 'none',
+    //     },
+    //     // 'border-width': '0px',
+    //     '& .MuiDataGrid-row': {
+    //         '&:nth-of-type(even)': {
+    //             backgroundColor: '#F5F5F5',
+    //         },
+    //     },
+    // }
+    // console.log(dataGridStyle)
+    // const noRowsOverlay = () => {
+    //     return (
+    //         <Stack height="100%" alignItems="center" justifyContent="center">
+    //             暂无符合条件的数据
+    //         </Stack>
+    //     )
+    // }
+    //
+    // const noResultsOverlay = () => {
+    //     return (
+    //         <Stack height="100%" alignItems="center" justifyContent="center">
+    //             暂无符合条件的数据
+    //         </Stack>
+    //     )
+    // }
 
     useEffect(() => {
         if (cookie.token === '' || cookie.token === undefined) {
@@ -659,12 +653,6 @@ const DatasetDetail = () => {
                 <Table sx={{}} stickyHeader aria-label="customized table">
                     <TableHead>
                         <TableRow>
-                            {/*  <TableCell align="center">问题</TableCell>*/}
-                            {/*<TableCell align="center">额外要求</TableCell>*/}
-                            {/*<TableCell align="center">输出</TableCell>*/}
-                            {/*<TableCell align="center">系统Prompt</TableCell>*/}
-                            {/*<TableCell align="center">操作</TableCell>*/}
-
                             <StyledTableCell align="center">问题</StyledTableCell>
                             <StyledTableCell align="center">额外要求</StyledTableCell>
                             <StyledTableCell align="center">输出</StyledTableCell>
@@ -780,32 +768,32 @@ const DatasetDetail = () => {
                 </Table>
             </TableContainer>
 
-            <DataGrid
-                rows={detailData}
-                columns={detailColumns}
-                pagination={false} // 这将隐藏分页功能
-                //  rowCount={rowCount}
-                //   getRowId={(row) => row.instruction + new Date().getTime()}
-                autoHeight={true}
-                sx={dataGridStyle}
-                // paginationModel={paginationModel}
-                // paginationMode="server"
-                //  onPaginationModelChange={setPaginationModel}
-                // onPageChange={handlePageChange}
-                //  onPageSizeChange={handlePageSizeChange}
-                // onPageChange={(newPage) => {
-                //     setPage_num(newPage)
-                //     update(isCallingApi)
-                // }}
-                // onPageSizeChange={(newPageSize) => {
-                //     setPage_size(newPageSize)
-                //     update(isCallingApi)
-                // }}
-                slots={{
-                    noRowsOverlay: noRowsOverlay,
-                    noResultsOverlay: noResultsOverlay,
-                }}
-            />
+            {/*<DataGrid*/}
+            {/*    rows={detailData}*/}
+            {/*    columns={detailColumns}*/}
+            {/*    pagination={false} // 这将隐藏分页功能*/}
+            {/*    //  rowCount={rowCount}*/}
+            {/*    //   getRowId={(row) => row.instruction + new Date().getTime()}*/}
+            {/*    autoHeight={true}*/}
+            {/*    sx={dataGridStyle}*/}
+            {/*    // paginationModel={paginationModel}*/}
+            {/*    // paginationMode="server"*/}
+            {/*    //  onPaginationModelChange={setPaginationModel}*/}
+            {/*    // onPageChange={handlePageChange}*/}
+            {/*    //  onPageSizeChange={handlePageSizeChange}*/}
+            {/*    // onPageChange={(newPage) => {*/}
+            {/*    //     setPage_num(newPage)*/}
+            {/*    //     update(isCallingApi)*/}
+            {/*    // }}*/}
+            {/*    // onPageSizeChange={(newPageSize) => {*/}
+            {/*    //     setPage_size(newPageSize)*/}
+            {/*    //     update(isCallingApi)*/}
+            {/*    // }}*/}
+            {/*    slots={{*/}
+            {/*        noRowsOverlay: noRowsOverlay,*/}
+            {/*        noResultsOverlay: noResultsOverlay,*/}
+            {/*    }}*/}
+            {/*/>*/}
 
             <TablePagination
                 component="div"
