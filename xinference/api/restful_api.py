@@ -619,6 +619,16 @@ class RESTfulAPI:
             ),
         ),
         self._router.add_api_route(
+            "/v1/runner/remove_training",
+            self.remove_training,
+            methods=["POST"],
+            dependencies=(
+                [Security(self._auth_service, scopes=["models:list"])]
+                if self.is_authenticated()
+                else None
+            ),
+        ),
+        self._router.add_api_route(
             "/v1/runner/evaluating",
             self.evaluating,
             methods=["POST"],
@@ -2109,12 +2119,24 @@ class RESTfulAPI:
                 raise HTTPException(status_code=500, detail="Internal Server Error.")
             finally:
                 process.terminate()
-
         return StreamingResponse(stream_output(), media_type="text/plain")
+
+    async def remove_training(self, request: Request) -> JSONResponse:
+        try:
+            params = await request.json()
+            shutil.rmtree(params['model_name_or_path'])
+            return JSONResponse(content={"info":"删除成功"})
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
 
     async def evaluating(self, request: Request) -> StreamingResponse:
         # 从请求体中获取参数
         params = await request.json()
+        create_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        basename = os.path.basename(params['model_name_or_path'])
+        finetuning_type = params['finetuning_type']
+        output_dir = f"evals/{basename}/{finetuning_type}/eval_{create_time}"
 
         def dict_to_command_list(dictionary, output_dir, prefix='--'):
             command_list = ['llamafactory-cli', 'train']
@@ -2123,6 +2145,8 @@ class RESTfulAPI:
                     continue
                 command_list.append(prefix + key)
                 command_list.append(str(value))
+            command_list.append('--output_dir')
+            command_list.append(output_dir)
             return command_list
 
         command = dict_to_command_list(params, output_dir)
